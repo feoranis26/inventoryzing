@@ -1,6 +1,6 @@
 # inventoryzing
 
-inventoryzing helps you track items, stock, and storage locations at a workshop or other local site. Use the browser to organize inventory, find items, record moves, and print labels.
+Basic inventory management system
 
 ## Get running
 
