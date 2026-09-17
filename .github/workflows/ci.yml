@@ -1,0 +1,72 @@
+name: Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_DB: inventoryzing_test
+          POSTGRES_USER: inventoryzing
+          POSTGRES_PASSWORD: inventoryzing-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U inventoryzing -d inventoryzing_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      IZ_DATABASE_URL: postgresql+psycopg://inventoryzing:inventoryzing-test-only@127.0.0.1:5432/inventoryzing_test
+      IZ_TEST_DATABASE_URL: postgresql+psycopg://inventoryzing:inventoryzing-test-only@127.0.0.1:5432/inventoryzing_test
+      IZ_RUNTIME_PASSWORD: isolated-test-runtime-password-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.10.12'
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/main-ui/package-lock.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: uv sync --project server/coordinator --locked
+      - run: uv run --project server/coordinator python -m inventoryzing.migrate
+      - run: uv run --project server/coordinator pytest server/coordinator/tests -q
+      - run: uv run --project server/coordinator ruff check server/coordinator/src server/coordinator/tests db/migrations
+      - run: uv run --project server/coordinator pyright --project server/coordinator --pythonpath server/coordinator/.venv/bin/python
+      - run: npm ci --prefix web/main-ui
+      - run: npm run --prefix web/main-ui lint
+      - run: npm run --prefix web/main-ui test
+      - run: npm run --prefix web/main-ui build
+      - run: dotnet restore agents/windows/inventoryzing-agent/Inventoryzing.Agent.sln --locked-mode
+      - run: dotnet format agents/windows/inventoryzing-agent/Inventoryzing.Agent.sln --verify-no-changes --severity info --no-restore
+      - run: dotnet test agents/windows/inventoryzing-agent/Inventoryzing.Agent.sln --configuration Release --no-restore
+      - run: uv run --project server/coordinator python -m inventoryzing.openapi web/main-ui/openapi.json
+      - run: npm run --prefix web/main-ui generate:api
+      - run: git diff --exit-code -- web/main-ui/openapi.json web/main-ui/src/generated/api.ts
+      - run: npx --prefix web/main-ui playwright install --with-deps chromium
+      - run: uv run --project server/coordinator python server/coordinator/tests/prepare_browser.py
+      - name: Browser Tests
+        shell: bash
+        env:
+          IZ_DATABASE_URL: postgresql+psycopg://inventoryzing_app:isolated-test-runtime-password-only@127.0.0.1:5432/inventoryzing_test
+          IZ_STATIC_DIR: ${{ github.workspace }}/web/main-ui/dist
+          IZ_PUBLIC_ORIGIN: http://127.0.0.1:8099
+          IZ_SECURE_COOKIES: 'false'
+        run: |
+          uv run --project server/coordinator uvicorn inventoryzing.app:create_app --factory --host 127.0.0.1 --port 8099 --no-access-log &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          curl --retry 20 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:8099/health/ready
+          npm run --prefix web/main-ui e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-results
+          path: web/main-ui/test-results/
+      - run: docker build --file deploy/docker/Dockerfile --tag inventoryzing-ci .

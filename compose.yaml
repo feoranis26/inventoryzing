@@ -1,0 +1,79 @@
+name: inventoryzing
+services:
+  coordinator:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+    image: inventoryzing-coordinator:local
+    environment:
+      IZ_DATABASE_URL: postgresql+psycopg://inventoryzing_app:${IZ_RUNTIME_PASSWORD:?Set IZ_RUNTIME_PASSWORD in .env}@db:5432/inventoryzing
+      IZ_PUBLIC_ORIGIN: http://localhost:${IZ_HTTP_PORT:-8088}
+      IZ_SECURE_COOKIES: "false"
+      IZ_ALLOWED_HOSTS: '["localhost", "127.0.0.1", "coordinator"]'
+    ports:
+      - "127.0.0.1:${IZ_HTTP_PORT:-8088}:8088"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  printer-agent:
+    build:
+      context: .
+      dockerfile: deploy/docker/printer-agent.Dockerfile
+    image: inventoryzing-printer-agent:local
+    profiles: ["printer"]
+    environment:
+      Inventoryzing__Agent__DataDirectory: /var/lib/inventoryzing/printer
+      Inventoryzing__Printer__Enabled: "true"
+      Inventoryzing__Printer__CoordinatorUri: http://coordinator:8088/
+      Inventoryzing__Printer__CredentialFile: /run/secrets/coordinator.token
+      Inventoryzing__Printer__PrinterId: brother:ql-820nwb
+      Inventoryzing__Printer__RasterHost: ${IZ_PRINTER_RASTER_HOST:-10.0.0.13}
+      Inventoryzing__Printer__RasterPort: "9100"
+      Inventoryzing__Printer__StatusPort: "161"
+    volumes:
+      - ./.local/printer/coordinator.token:/run/secrets/coordinator.token:ro
+    depends_on:
+      coordinator:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/lib/inventoryzing/printer
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  migrate:
+    image: inventoryzing-coordinator:local
+    environment:
+      IZ_DATABASE_URL: postgresql+psycopg://inventoryzing:${POSTGRES_PASSWORD}@db:5432/inventoryzing
+      IZ_RUNTIME_PASSWORD: ${IZ_RUNTIME_PASSWORD}
+    command: ["python", "-m", "inventoryzing.migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+  db:
+    image: postgres:18.3-alpine
+    environment:
+      POSTGRES_DB: inventoryzing
+      POSTGRES_USER: inventoryzing
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${IZ_DB_PORT:-55438}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventoryzing -d inventoryzing"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

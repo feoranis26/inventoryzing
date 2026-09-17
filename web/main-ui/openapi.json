@@ -1,0 +1,6046 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "inventoryzing",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/site/settings": {
+      "get": {
+        "summary": "Site Settings",
+        "operationId": "site_settings_api_site_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Site Settings",
+        "operationId": "update_site_settings_api_site_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSiteSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/site/logo": {
+      "get": {
+        "summary": "Site Logo",
+        "operationId": "site_logo_api_site_logo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Site Logo",
+        "operationId": "update_site_logo_api_site_logo_put",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSiteLogo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove Site Logo",
+        "operationId": "remove_site_logo_api_site_logo_delete",
+        "parameters": [
+          {
+            "name": "expected_version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Expected Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Sign In",
+        "operationId": "sign_in_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "summary": "Current Session",
+        "operationId": "current_session_api_auth_session_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Sign Out",
+        "operationId": "sign_out_api_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/admin/permissions": {
+      "get": {
+        "summary": "List Permissions",
+        "operationId": "list_permissions_api_admin_permissions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response List Permissions Api Admin Permissions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/roles": {
+      "get": {
+        "summary": "List Roles",
+        "operationId": "list_roles_api_admin_roles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoleView"
+                  },
+                  "type": "array",
+                  "title": "Response List Roles Api Admin Roles Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Role",
+        "operationId": "create_role_api_admin_roles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRole"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/roles/{role_id}": {
+      "put": {
+        "summary": "Update Role",
+        "operationId": "update_role_api_admin_roles__role_id__put",
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/accounts": {
+      "get": {
+        "summary": "List Accounts",
+        "operationId": "list_accounts_api_admin_accounts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountView"
+                  },
+                  "type": "array",
+                  "title": "Response List Accounts Api Admin Accounts Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Account",
+        "operationId": "create_account_api_admin_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccount"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/accounts/{account_id}": {
+      "put": {
+        "summary": "Update Account",
+        "operationId": "update_account_api_admin_accounts__account_id__put",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccount"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/accounts/{account_id}/password": {
+      "post": {
+        "summary": "Reset Account Password",
+        "operationId": "reset_account_password_api_admin_accounts__account_id__password_post",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetAccountPassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/principals": {
+      "get": {
+        "summary": "List Principals",
+        "operationId": "list_principals_api_principals_get",
+        "parameters": [
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrincipalView"
+                  },
+                  "title": "Response List Principals Api Principals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Principal",
+        "operationId": "create_principal_api_principals_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePrincipal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/principals/{principal_id}": {
+      "put": {
+        "summary": "Update Principal",
+        "operationId": "update_principal_api_principals__principal_id__put",
+        "parameters": [
+          {
+            "name": "principal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Principal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePrincipal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/principals/{principal_id}/archive": {
+      "post": {
+        "summary": "Archive Principal",
+        "operationId": "archive_principal_api_principals__principal_id__archive_post",
+        "parameters": [
+          {
+            "name": "principal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Principal Id"
+            }
+          },
+          {
+            "name": "expected_version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Expected Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commands": {
+      "post": {
+        "summary": "Commands",
+        "operationId": "commands_api_commands_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects": {
+      "get": {
+        "summary": "List Objects",
+        "operationId": "list_objects_api_objects_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160,
+              "default": "",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "parent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Id"
+            }
+          },
+          {
+            "name": "subtree_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtree Id"
+            }
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type Id"
+            }
+          },
+          {
+            "name": "exact_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Exact Type"
+            }
+          },
+          {
+            "name": "roots",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Roots"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}": {
+      "get": {
+        "summary": "Get Object",
+        "operationId": "get_object_api_objects__object_id__get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/ancestors": {
+      "get": {
+        "summary": "Ancestors",
+        "operationId": "ancestors_api_objects__object_id__ancestors_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ObjectView"
+                  },
+                  "title": "Response Ancestors Api Objects  Object Id  Ancestors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/history": {
+      "get": {
+        "summary": "History",
+        "operationId": "history_api_objects__object_id__history_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntry"
+                  },
+                  "title": "Response History Api Objects  Object Id  History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/types": {
+      "get": {
+        "summary": "List Types",
+        "operationId": "list_types_api_types_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TypeView"
+                  },
+                  "type": "array",
+                  "title": "Response List Types Api Types Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/types/{type_id}/stock-policy": {
+      "get": {
+        "summary": "Type Stock Policy",
+        "operationId": "type_stock_policy_api_types__type_id__stock_policy_get",
+        "parameters": [
+          {
+            "name": "type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Type Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockPolicyView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "summary": "List Tags",
+        "operationId": "list_tags_api_tags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TagView"
+                  },
+                  "type": "array",
+                  "title": "Response List Tags Api Tags Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/tags": {
+      "get": {
+        "summary": "Object Tags",
+        "operationId": "object_tags_api_objects__object_id__tags_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityTagsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/types/{type_id}/tags": {
+      "get": {
+        "summary": "Type Tags",
+        "operationId": "type_tags_api_types__type_id__tags_get",
+        "parameters": [
+          {
+            "name": "type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Type Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityTagsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resolve": {
+      "get": {
+        "summary": "Resolve",
+        "operationId": "resolve_api_resolve_get",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Value"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/properties": {
+      "get": {
+        "summary": "List Properties",
+        "operationId": "list_properties_api_properties_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyDefinition"
+                  },
+                  "type": "array",
+                  "title": "Response List Properties Api Properties Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/properties": {
+      "get": {
+        "summary": "Object Properties",
+        "operationId": "object_properties_api_objects__object_id__properties_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyValue"
+                  },
+                  "title": "Response Object Properties Api Objects  Object Id  Properties Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/types/{type_id}/properties": {
+      "get": {
+        "summary": "Type Properties",
+        "operationId": "type_properties_api_types__type_id__properties_get",
+        "parameters": [
+          {
+            "name": "type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Type Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyValue"
+                  },
+                  "title": "Response Type Properties Api Types  Type Id  Properties Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/property-units": {
+      "get": {
+        "summary": "Property Units",
+        "operationId": "property_units_api_property_units_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnitDimension"
+                  },
+                  "type": "array",
+                  "title": "Response Property Units Api Property Units Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-placeholders": {
+      "get": {
+        "summary": "List Label Placeholders",
+        "operationId": "list_label_placeholders_api_label_placeholders_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyDefinition"
+                  },
+                  "type": "array",
+                  "title": "Response List Label Placeholders Api Label Placeholders Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-media-presets": {
+      "get": {
+        "summary": "List Label Media Presets",
+        "operationId": "list_label_media_presets_api_label_media_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MediaPreset"
+                  },
+                  "type": "array",
+                  "title": "Response List Label Media Presets Api Label Media Presets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/printers/default/media": {
+      "get": {
+        "summary": "Get Printer Media",
+        "operationId": "get_printer_media_api_printers_default_media_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrinterMediaView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/printers/default/media": {
+      "post": {
+        "summary": "Report Printer Media",
+        "operationId": "report_printer_media_api_agent_printers_default_media_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrinterMediaReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrinterMediaView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-templates": {
+      "get": {
+        "summary": "List Label Templates",
+        "operationId": "list_label_templates_api_label_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LabelTemplateView"
+                  },
+                  "type": "array",
+                  "title": "Response List Label Templates Api Label Templates Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Label Template",
+        "operationId": "create_label_template_api_label_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLabelTemplate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelTemplateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-templates/{template_id}": {
+      "put": {
+        "summary": "Update Label Template",
+        "operationId": "update_label_template_api_label_templates__template_id__put",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLabelTemplate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelTemplateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-templates/{template_id}/publish": {
+      "post": {
+        "summary": "Publish Label Template",
+        "operationId": "publish_label_template_api_label_templates__template_id__publish_post",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelTemplateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-templates/{template_id}/preview.svg": {
+      "get": {
+        "summary": "Preview Label Template",
+        "operationId": "preview_label_template_api_label_templates__template_id__preview_svg_get",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "object_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-templates/{template_id}/preview.png": {
+      "get": {
+        "summary": "Preview Label Template Png",
+        "operationId": "preview_label_template_png_api_label_templates__template_id__preview_png_get",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "object_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/label.svg": {
+      "get": {
+        "summary": "Preview Label Svg",
+        "operationId": "preview_label_svg_api_objects__object_id__label_svg_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          },
+          {
+            "name": "payload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "local",
+                "uuid"
+              ],
+              "type": "string",
+              "default": "local",
+              "title": "Payload"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}/tag.png": {
+      "get": {
+        "summary": "Preview Tag",
+        "operationId": "preview_tag_api_objects__object_id__tag_png_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Object Id"
+            }
+          },
+          {
+            "name": "payload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "local",
+                "uuid"
+              ],
+              "type": "string",
+              "default": "local",
+              "title": "Payload"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/print-requests": {
+      "post": {
+        "summary": "Create Print Request",
+        "operationId": "create_print_request_api_print_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePrintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintRequestView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/print-requests/{request_id}": {
+      "get": {
+        "summary": "Get Print Request",
+        "operationId": "get_print_request_api_print_requests__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintRequestView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/printers/default/force-reset": {
+      "post": {
+        "summary": "Force Reset Printer",
+        "operationId": "force_reset_printer_api_printers_default_force_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/print-requests/claim": {
+      "post": {
+        "summary": "Claim Print Request",
+        "operationId": "claim_print_request_api_agent_print_requests_claim_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PrintRequestClaim"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Claim Print Request Api Agent Print Requests Claim Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/print-requests/{request_id}/report": {
+      "post": {
+        "summary": "Report Print Request",
+        "operationId": "report_print_request_api_agent_print_requests__request_id__report_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintRequestReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintRequestView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scanner/terminal": {
+      "get": {
+        "summary": "Current Terminal",
+        "operationId": "current_terminal_api_scanner_terminal_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScannerTerminalView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scanner/sessions": {
+      "post": {
+        "summary": "Create Session",
+        "operationId": "create_session_api_scanner_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScanSession"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scanner/sessions/{session_id}": {
+      "get": {
+        "summary": "Read Session",
+        "operationId": "read_session_api_scanner_sessions__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Session",
+        "operationId": "delete_session_api_scanner_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/scans": {
+      "post": {
+        "summary": "Receive Scan",
+        "operationId": "receive_scan_api_agent_scans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanObservation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentScanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scanner/sessions/{session_id}/input": {
+      "post": {
+        "summary": "Manual Scan",
+        "operationId": "manual_scan_api_scanner_sessions__session_id__input_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualScanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentScanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Live",
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Live Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Ready Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "principal_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Id"
+          },
+          "principal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Name"
+          },
+          "disabled": {
+            "type": "boolean",
+            "title": "Disabled"
+          },
+          "roles": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "login",
+          "principal_id",
+          "principal_name",
+          "disabled",
+          "roles",
+          "permissions",
+          "version"
+        ],
+        "title": "AccountView"
+      },
+      "AgentScanResponse": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "no_action"
+            ],
+            "title": "Outcome"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "command_completed": {
+            "type": "boolean",
+            "title": "Command Completed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "message"
+        ],
+        "title": "AgentScanResponse"
+      },
+      "AllocateAlias": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "identifier.allocate",
+            "title": "Kind"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "object_id",
+          "expected_version"
+        ],
+        "title": "AllocateAlias"
+      },
+      "ChangeStock": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "stock.receive",
+              "stock.consume",
+              "stock.adjust"
+            ],
+            "title": "Kind"
+          },
+          "holding_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Holding Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "holding_id",
+          "expected_version",
+          "amount",
+          "unit"
+        ],
+        "title": "ChangeStock"
+      },
+      "Command": {
+        "properties": {
+          "authority_site": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Authority Site"
+          },
+          "authority_epoch": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Authority Epoch"
+          },
+          "command_epoch": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Command Epoch"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateObject"
+              },
+              {
+                "$ref": "#/components/schemas/EditObject"
+              },
+              {
+                "$ref": "#/components/schemas/SetObjectType"
+              },
+              {
+                "$ref": "#/components/schemas/MoveObject"
+              },
+              {
+                "$ref": "#/components/schemas/AllocateAlias"
+              },
+              {
+                "$ref": "#/components/schemas/CreateType"
+              },
+              {
+                "$ref": "#/components/schemas/EditType"
+              },
+              {
+                "$ref": "#/components/schemas/CreatePropertyDefinition"
+              },
+              {
+                "$ref": "#/components/schemas/SetTypePropertyDeclaration"
+              },
+              {
+                "$ref": "#/components/schemas/SetPropertyValue"
+              },
+              {
+                "$ref": "#/components/schemas/EditPropertyDefinition"
+              },
+              {
+                "$ref": "#/components/schemas/DeleteDefinition"
+              },
+              {
+                "$ref": "#/components/schemas/ConvertPropertyUnit"
+              },
+              {
+                "$ref": "#/components/schemas/CreateTag"
+              },
+              {
+                "$ref": "#/components/schemas/EditTag"
+              },
+              {
+                "$ref": "#/components/schemas/SetTagParents"
+              },
+              {
+                "$ref": "#/components/schemas/SetEntityTags"
+              },
+              {
+                "$ref": "#/components/schemas/SetStockPolicy"
+              },
+              {
+                "$ref": "#/components/schemas/CreateStockHolding"
+              },
+              {
+                "$ref": "#/components/schemas/ChangeStock"
+              },
+              {
+                "$ref": "#/components/schemas/TransferStock"
+              }
+            ],
+            "title": "Payload",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "definition.delete": "#/components/schemas/DeleteDefinition",
+                "identifier.allocate": "#/components/schemas/AllocateAlias",
+                "object.create": "#/components/schemas/CreateObject",
+                "object.edit": "#/components/schemas/EditObject",
+                "object.move": "#/components/schemas/MoveObject",
+                "object.type.set": "#/components/schemas/SetObjectType",
+                "property.definition.create": "#/components/schemas/CreatePropertyDefinition",
+                "property.definition.edit": "#/components/schemas/EditPropertyDefinition",
+                "property.unit.set": "#/components/schemas/ConvertPropertyUnit",
+                "property.value.set": "#/components/schemas/SetPropertyValue",
+                "stock.adjust": "#/components/schemas/ChangeStock",
+                "stock.consume": "#/components/schemas/ChangeStock",
+                "stock.holding.create": "#/components/schemas/CreateStockHolding",
+                "stock.policy.set": "#/components/schemas/SetStockPolicy",
+                "stock.receive": "#/components/schemas/ChangeStock",
+                "stock.transfer": "#/components/schemas/TransferStock",
+                "tag.create": "#/components/schemas/CreateTag",
+                "tag.edit": "#/components/schemas/EditTag",
+                "tag.parents.set": "#/components/schemas/SetTagParents",
+                "tags.set": "#/components/schemas/SetEntityTags",
+                "type.create": "#/components/schemas/CreateType",
+                "type.edit": "#/components/schemas/EditType",
+                "type.property.declare": "#/components/schemas/SetTypePropertyDeclaration"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "authority_site",
+          "authority_epoch",
+          "command_epoch",
+          "command_id",
+          "payload"
+        ],
+        "title": "Command"
+      },
+      "CommandResult": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entity Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "entity_id",
+          "version",
+          "event_id"
+        ],
+        "title": "CommandResult"
+      },
+      "ConvertPropertyUnit": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.unit.set",
+            "title": "Kind"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "target_kind": {
+            "type": "string",
+            "enum": [
+              "object",
+              "object_type"
+            ],
+            "title": "Target Kind"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "property_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Property Id"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "target_id",
+          "target_kind",
+          "expected_version",
+          "property_id",
+          "unit"
+        ],
+        "title": "ConvertPropertyUnit"
+      },
+      "CreateAccount": {
+        "properties": {
+          "login": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Login"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 12,
+            "title": "Password"
+          },
+          "principal_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Id"
+          },
+          "role_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Role Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "title": "CreateAccount"
+      },
+      "CreateObject": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "object.create",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "object_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "contained_in",
+              "installed_in",
+              "mounted_in",
+              "located_in"
+            ],
+            "title": "Relation",
+            "default": "contained_in"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Tag Ids"
+          },
+          "property_values": {
+            "items": {
+              "$ref": "#/components/schemas/CreateObjectPropertyValue"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Property Values"
+          },
+          "allocate_alias": {
+            "type": "boolean",
+            "title": "Allocate Alias",
+            "default": true
+          },
+          "copy_properties_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PropertyCopySource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "CreateObject"
+      },
+      "CreateObjectPropertyValue": {
+        "properties": {
+          "property_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Property Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "unset",
+              "value"
+            ],
+            "title": "Mode"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "property_id",
+          "mode"
+        ],
+        "title": "CreateObjectPropertyValue"
+      },
+      "CreatePrincipal": {
+        "properties": {
+          "principal_kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "team",
+              "organization",
+              "project",
+              "site"
+            ],
+            "title": "Principal Kind"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "principal_kind",
+          "display_name"
+        ],
+        "title": "CreatePrincipal"
+      },
+      "CreatePrintRequest": {
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "payload": {
+            "type": "string",
+            "enum": [
+              "local",
+              "uuid"
+            ],
+            "title": "Payload",
+            "default": "local"
+          },
+          "copies": {
+            "type": "integer",
+            "maximum": 1.0,
+            "minimum": 1.0,
+            "title": "Copies",
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "object_id"
+        ],
+        "title": "CreatePrintRequest"
+      },
+      "CreatePropertyDefinition": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.definition.create",
+            "title": "Kind"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "value_type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "integer",
+              "decimal",
+              "boolean",
+              "date",
+              "datetime",
+              "quantity"
+            ],
+            "title": "Value Type"
+          },
+          "quantity_dimension": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "count",
+                  "volume",
+                  "length",
+                  "mass",
+                  "area"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Dimension"
+          },
+          "allowed_units": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Allowed Units"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "value_type"
+        ],
+        "title": "CreatePropertyDefinition"
+      },
+      "CreateRole": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Permissions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CreateRole"
+      },
+      "CreateScanSession": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lookup",
+              "move"
+            ],
+            "title": "Mode"
+          },
+          "destination_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Id"
+          },
+          "controller_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Controller Id"
+          },
+          "take_over": {
+            "type": "boolean",
+            "title": "Take Over",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "controller_id"
+        ],
+        "title": "CreateScanSession"
+      },
+      "CreateStockHolding": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "stock.holding.create",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "object_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Type Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "contained_in",
+              "installed_in",
+              "mounted_in",
+              "located_in"
+            ],
+            "title": "Relation",
+            "default": "contained_in"
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "allocate_alias": {
+            "type": "boolean",
+            "title": "Allocate Alias",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "object_type_id",
+          "amount",
+          "unit"
+        ],
+        "title": "CreateStockHolding"
+      },
+      "CreateTag": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "tag.create",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "parent_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Parent Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "CreateTag"
+      },
+      "CreateType": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "type.create",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "parent_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Type Id"
+          },
+          "abstract": {
+            "type": "boolean",
+            "title": "Abstract",
+            "default": false
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Tag Ids"
+          },
+          "copy_properties_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PropertyCopySource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "CreateType"
+      },
+      "DeleteDefinition": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "definition.delete",
+            "title": "Kind"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entity Id"
+          },
+          "entity_kind": {
+            "type": "string",
+            "enum": [
+              "tag",
+              "object_type",
+              "property_definition"
+            ],
+            "title": "Entity Kind"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "entity_id",
+          "entity_kind",
+          "expected_version"
+        ],
+        "title": "DeleteDefinition"
+      },
+      "EditObject": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "object.edit",
+            "title": "Kind"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "object_id",
+          "expected_version",
+          "name"
+        ],
+        "title": "EditObject"
+      },
+      "EditPropertyDefinition": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.definition.edit",
+            "title": "Kind"
+          },
+          "property_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Property Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "property_id",
+          "expected_version",
+          "label"
+        ],
+        "title": "EditPropertyDefinition"
+      },
+      "EditTag": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "tag.edit",
+            "title": "Kind"
+          },
+          "tag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tag Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "tag_id",
+          "expected_version",
+          "name"
+        ],
+        "title": "EditTag"
+      },
+      "EditType": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "type.edit",
+            "title": "Kind"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "parent_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Type Id"
+          },
+          "abstract": {
+            "type": "boolean",
+            "title": "Abstract",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "type_id",
+          "expected_version",
+          "name"
+        ],
+        "title": "EditType"
+      },
+      "EffectiveTagView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/TagSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sources"
+        ],
+        "title": "EffectiveTagView"
+      },
+      "EntityTagsView": {
+        "properties": {
+          "explicit_tag_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Explicit Tag Ids"
+          },
+          "effective_tags": {
+            "items": {
+              "$ref": "#/components/schemas/EffectiveTagView"
+            },
+            "type": "array",
+            "title": "Effective Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "explicit_tag_ids",
+          "effective_tags"
+        ],
+        "title": "EntityTagsView"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoryEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "occurred_at",
+          "actor",
+          "version",
+          "payload"
+        ],
+        "title": "HistoryEntry"
+      },
+      "JsonValue": {},
+      "LabelElement": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "qr",
+              "text",
+              "field",
+              "site_branding",
+              "inventoryzing_branding"
+            ],
+            "title": "Kind"
+          },
+          "x_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "X Mm"
+          },
+          "y_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Y Mm"
+          },
+          "width_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height Mm"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Content",
+            "default": ""
+          },
+          "show_label": {
+            "type": "boolean",
+            "title": "Show Label",
+            "default": false
+          },
+          "font_size_mm": {
+            "type": "number",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Font Size Mm",
+            "default": 3
+          },
+          "wrap_text": {
+            "type": "boolean",
+            "title": "Wrap Text",
+            "default": false
+          },
+          "auto_fit": {
+            "type": "boolean",
+            "title": "Auto Fit",
+            "default": false
+          },
+          "min_font_size_mm": {
+            "type": "number",
+            "maximum": 30.0,
+            "minimum": 0.8,
+            "title": "Min Font Size Mm",
+            "default": 1
+          },
+          "align": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "title": "Align",
+            "default": "center"
+          },
+          "vertical_align": {
+            "type": "string",
+            "enum": [
+              "top",
+              "center",
+              "bottom"
+            ],
+            "title": "Vertical Align",
+            "default": "center"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "x_mm",
+          "y_mm",
+          "width_mm",
+          "height_mm"
+        ],
+        "title": "LabelElement"
+      },
+      "LabelTemplateDefinition": {
+        "properties": {
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/LabelElement"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Elements"
+          },
+          "orientation": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "rotated"
+            ],
+            "title": "Orientation",
+            "default": "normal"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LabelTemplateDefinition"
+      },
+      "LabelTemplateView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "width_mm": {
+            "type": "number",
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "title": "Height Mm"
+          },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "die_cut",
+              "continuous"
+            ],
+            "title": "Media Kind"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/LabelTemplateDefinition"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "has_unpublished_changes": {
+            "type": "boolean",
+            "title": "Has Unpublished Changes",
+            "default": false
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "revision",
+          "width_mm",
+          "height_mm",
+          "media_kind",
+          "definition",
+          "is_default",
+          "updated_at"
+        ],
+        "title": "LabelTemplateView"
+      },
+      "LocationSegment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationSegment"
+      },
+      "Login": {
+        "properties": {
+          "login": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Login"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "title": "Login"
+      },
+      "ManualScanInput": {
+        "properties": {
+          "payload": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Payload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "payload"
+        ],
+        "title": "ManualScanInput"
+      },
+      "MediaPreset": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "width_mm": {
+            "type": "number",
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "title": "Height Mm"
+          },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "die_cut",
+              "continuous"
+            ],
+            "title": "Media Kind"
+          },
+          "margin_x_mm": {
+            "type": "number",
+            "title": "Margin X Mm",
+            "default": 0
+          },
+          "margin_y_mm": {
+            "type": "number",
+            "title": "Margin Y Mm",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "width_mm",
+          "height_mm",
+          "media_kind"
+        ],
+        "title": "MediaPreset"
+      },
+      "MoveObject": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "object.move",
+            "title": "Kind"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "contained_in",
+              "installed_in",
+              "mounted_in",
+              "located_in"
+            ],
+            "title": "Relation",
+            "default": "contained_in"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "object_id",
+          "expected_version",
+          "parent_id"
+        ],
+        "title": "MoveObject"
+      },
+      "ObjectPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObjectView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ObjectPage"
+      },
+      "ObjectView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "object_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type Id"
+          },
+          "type_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "parent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Name"
+          },
+          "location_path": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSegment"
+            },
+            "type": "array",
+            "title": "Location Path"
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count"
+          },
+          "relation": {
+            "type": "string",
+            "title": "Relation"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          },
+          "authority_epoch": {
+            "type": "integer",
+            "title": "Authority Epoch"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockHoldingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "object_type_id",
+          "type_name",
+          "parent_id",
+          "parent_name",
+          "location_path",
+          "child_count",
+          "relation",
+          "alias",
+          "authority_epoch",
+          "version",
+          "updated_at"
+        ],
+        "title": "ObjectView"
+      },
+      "PrincipalView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "principal_kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "team",
+              "organization",
+              "project",
+              "site"
+            ],
+            "title": "Principal Kind"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "linked_account_count": {
+            "type": "integer",
+            "title": "Linked Account Count"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "principal_kind",
+          "display_name",
+          "version",
+          "linked_account_count",
+          "archived"
+        ],
+        "title": "PrincipalView"
+      },
+      "PrintRequestClaim": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "media_type": {
+            "type": "string",
+            "const": "application/vnd.inventoryzing.brother-raster",
+            "title": "Media Type"
+          },
+          "width_mm": {
+            "type": "number",
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "title": "Height Mm"
+          },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "die_cut",
+              "continuous"
+            ],
+            "title": "Media Kind"
+          },
+          "feed_margin_dots": {
+            "type": "integer",
+            "title": "Feed Margin Dots"
+          },
+          "raster_line_bytes": {
+            "type": "integer",
+            "title": "Raster Line Bytes"
+          },
+          "raster_lines": {
+            "type": "integer",
+            "title": "Raster Lines"
+          },
+          "raster_base64": {
+            "type": "string",
+            "title": "Raster Base64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "profile_id",
+          "media_type",
+          "width_mm",
+          "height_mm",
+          "media_kind",
+          "feed_margin_dots",
+          "raster_line_bytes",
+          "raster_lines",
+          "raster_base64"
+        ],
+        "title": "PrintRequestClaim"
+      },
+      "PrintRequestReport": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "Completed",
+              "Rejected",
+              "Unknown"
+            ],
+            "title": "State"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "PrintRequestReport"
+      },
+      "PrintRequestView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "Queued",
+              "Claimed",
+              "Unknown",
+              "Completed",
+              "Rejected",
+              "Reset"
+            ],
+            "title": "State"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "state"
+        ],
+        "title": "PrintRequestView"
+      },
+      "PrinterMediaReport": {
+        "properties": {
+          "width_mm": {
+            "type": "integer",
+            "maximum": 255.0,
+            "minimum": 0.0,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "integer",
+            "maximum": 255.0,
+            "minimum": 0.0,
+            "title": "Height Mm"
+          },
+          "media_type": {
+            "type": "integer",
+            "maximum": 255.0,
+            "minimum": 0.0,
+            "title": "Media Type"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "Ready",
+              "Printing",
+              "Completed",
+              "Blocked",
+              "Invalid",
+              "Unavailable"
+            ],
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width_mm",
+          "height_mm",
+          "media_type",
+          "state"
+        ],
+        "title": "PrinterMediaReport"
+      },
+      "PrinterMediaView": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "width_mm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Mm"
+          },
+          "media_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "die_cut",
+                  "continuous",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Kind"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "title": "PrinterMediaView"
+      },
+      "PropertyCopySource": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "expected_version"
+        ],
+        "title": "PropertyCopySource"
+      },
+      "PropertyDefinition": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "date",
+              "datetime",
+              "number",
+              "integer",
+              "decimal",
+              "boolean",
+              "quantity"
+            ],
+            "title": "Type",
+            "default": "text"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "example": {
+            "type": "string",
+            "title": "Example",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "quantity_dimension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Dimension"
+          },
+          "canonical_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Unit"
+          },
+          "allowed_units": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Units"
+          },
+          "schema_revision": {
+            "type": "integer",
+            "title": "Schema Revision",
+            "default": 1
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": false
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
+          "declared_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Declared On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "provider"
+        ],
+        "title": "PropertyDefinition"
+      },
+      "PropertyValue": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "date",
+              "datetime",
+              "number",
+              "integer",
+              "decimal",
+              "boolean",
+              "quantity"
+            ],
+            "title": "Type",
+            "default": "text"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "example": {
+            "type": "string",
+            "title": "Example",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "quantity_dimension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Dimension"
+          },
+          "canonical_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Unit"
+          },
+          "allowed_units": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Units"
+          },
+          "schema_revision": {
+            "type": "integer",
+            "title": "Schema Revision",
+            "default": 1
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": false
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
+          "declared_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Declared On"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "formatted_value": {
+            "type": "string",
+            "title": "Formatted Value",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "missing",
+              "unavailable"
+            ],
+            "title": "Status",
+            "default": "missing"
+          },
+          "effective_state": {
+            "type": "string",
+            "enum": [
+              "value",
+              "unset",
+              "missing"
+            ],
+            "title": "Effective State",
+            "default": "missing"
+          },
+          "local_state": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "value",
+              "unset"
+            ],
+            "title": "Local State",
+            "default": "inherit"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "object",
+                  "object_type"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "applicability_source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicability Source Id"
+          },
+          "applicability_source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicability Source Name"
+          },
+          "declared_directly": {
+            "type": "boolean",
+            "title": "Declared Directly",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "provider"
+        ],
+        "title": "PropertyValue"
+      },
+      "ResetAccountPassword": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 12,
+            "title": "Password"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "password",
+          "expected_version"
+        ],
+        "title": "ResetAccountPassword"
+      },
+      "RoleView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          },
+          "assigned_account_count": {
+            "type": "integer",
+            "title": "Assigned Account Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "version",
+          "permissions",
+          "assigned_account_count"
+        ],
+        "title": "RoleView"
+      },
+      "SaveLabelTemplate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "width_mm": {
+            "type": "number",
+            "maximum": 300.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height Mm"
+          },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "die_cut",
+              "continuous"
+            ],
+            "title": "Media Kind",
+            "default": "die_cut"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/LabelTemplateDefinition"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "width_mm",
+          "height_mm",
+          "definition"
+        ],
+        "title": "SaveLabelTemplate"
+      },
+      "ScanObservation": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "terminal_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Id"
+          },
+          "payload": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Payload"
+          },
+          "source_id": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "runtime_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Runtime Id"
+          },
+          "source_type": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Source Type"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "symbology": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbology"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "payload",
+          "source_id",
+          "runtime_id",
+          "source_type",
+          "received_at"
+        ],
+        "title": "ScanObservation"
+      },
+      "ScanResult": {
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "title": "Sequence"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure",
+              "no_action"
+            ],
+            "title": "Outcome"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "object_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Id"
+          },
+          "object_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sequence",
+          "event_id",
+          "outcome",
+          "message",
+          "occurred_at"
+        ],
+        "title": "ScanResult"
+      },
+      "ScanSessionView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "terminal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Terminal Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lookup",
+              "move"
+            ],
+            "title": "Mode"
+          },
+          "destination_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Id"
+          },
+          "destination_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Name"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ScanResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "terminal_id",
+          "mode",
+          "destination_id",
+          "destination_name",
+          "expires_at"
+        ],
+        "title": "ScanSessionView"
+      },
+      "ScannerTerminalView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "ScannerTerminalView"
+      },
+      "SessionView": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token"
+          },
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "command_epoch": {
+            "type": "integer",
+            "title": "Command Epoch"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "login",
+          "csrf_token",
+          "site_id",
+          "site_name",
+          "command_epoch",
+          "permissions"
+        ],
+        "title": "SessionView"
+      },
+      "SetEntityTags": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "tags.set",
+            "title": "Kind"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entity Id"
+          },
+          "entity_kind": {
+            "type": "string",
+            "enum": [
+              "object",
+              "object_type"
+            ],
+            "title": "Entity Kind"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Tag Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "entity_id",
+          "entity_kind",
+          "expected_version"
+        ],
+        "title": "SetEntityTags"
+      },
+      "SetObjectType": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "object.type.set",
+            "title": "Kind"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "object_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Type Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "object_id",
+          "expected_version",
+          "object_type_id"
+        ],
+        "title": "SetObjectType"
+      },
+      "SetPropertyValue": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.value.set",
+            "title": "Kind"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "target_kind": {
+            "type": "string",
+            "enum": [
+              "object",
+              "object_type"
+            ],
+            "title": "Target Kind"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "property_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Property Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "unset",
+              "value"
+            ],
+            "title": "Mode"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "target_id",
+          "target_kind",
+          "expected_version",
+          "property_id",
+          "mode"
+        ],
+        "title": "SetPropertyValue"
+      },
+      "SetStockPolicy": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "stock.policy.set",
+            "title": "Kind"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "quantity_dimension": {
+            "type": "string",
+            "enum": [
+              "count",
+              "volume",
+              "length",
+              "mass",
+              "area"
+            ],
+            "title": "Quantity Dimension"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "granularity": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Granularity",
+            "default": "1"
+          },
+          "allow_negative": {
+            "type": "boolean",
+            "title": "Allow Negative",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "type_id",
+          "expected_version",
+          "quantity_dimension",
+          "unit"
+        ],
+        "title": "SetStockPolicy"
+      },
+      "SetTagParents": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "tag.parents.set",
+            "title": "Kind"
+          },
+          "tag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tag Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "parent_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Parent Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "tag_id",
+          "expected_version"
+        ],
+        "title": "SetTagParents"
+      },
+      "SetTypePropertyDeclaration": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "type.property.declare",
+            "title": "Kind"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "property_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Property Id"
+          },
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "type_id",
+          "expected_version",
+          "property_id",
+          "applicable"
+        ],
+        "title": "SetTypePropertyDeclaration"
+      },
+      "SiteSettingsView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "settings_version": {
+            "type": "integer",
+            "title": "Settings Version"
+          },
+          "has_logo": {
+            "type": "boolean",
+            "title": "Has Logo"
+          },
+          "logo_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "settings_version",
+          "has_logo"
+        ],
+        "title": "SiteSettingsView"
+      },
+      "StockHoldingView": {
+        "properties": {
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "quantity_dimension": {
+            "type": "string",
+            "enum": [
+              "count",
+              "volume",
+              "length",
+              "mass",
+              "area"
+            ],
+            "title": "Quantity Dimension"
+          },
+          "canonical_unit": {
+            "type": "string",
+            "title": "Canonical Unit"
+          },
+          "granularity": {
+            "type": "string",
+            "title": "Granularity"
+          },
+          "allow_negative": {
+            "type": "boolean",
+            "title": "Allow Negative"
+          },
+          "policy_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Type Id"
+          },
+          "policy_type_name": {
+            "type": "string",
+            "title": "Policy Type Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantity",
+          "quantity_dimension",
+          "canonical_unit",
+          "granularity",
+          "allow_negative",
+          "policy_type_id",
+          "policy_type_name"
+        ],
+        "title": "StockHoldingView"
+      },
+      "StockPolicyView": {
+        "properties": {
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "policy_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Type Id"
+          },
+          "policy_type_name": {
+            "type": "string",
+            "title": "Policy Type Name"
+          },
+          "quantity_dimension": {
+            "type": "string",
+            "enum": [
+              "count",
+              "volume",
+              "length",
+              "mass",
+              "area"
+            ],
+            "title": "Quantity Dimension"
+          },
+          "canonical_unit": {
+            "type": "string",
+            "title": "Canonical Unit"
+          },
+          "granularity": {
+            "type": "string",
+            "title": "Granularity"
+          },
+          "allow_negative": {
+            "type": "boolean",
+            "title": "Allow Negative"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type_id",
+          "policy_type_id",
+          "policy_type_name",
+          "quantity_dimension",
+          "canonical_unit",
+          "granularity",
+          "allow_negative"
+        ],
+        "title": "StockPolicyView"
+      },
+      "TagSource": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "object",
+              "object_type"
+            ],
+            "title": "Source Kind"
+          },
+          "tag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tag Id"
+          },
+          "tag_name": {
+            "type": "string",
+            "title": "Tag Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_kind",
+          "tag_id",
+          "tag_name"
+        ],
+        "title": "TagSource"
+      },
+      "TagView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "parent_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Parent Ids"
+          },
+          "direct_object_count": {
+            "type": "integer",
+            "title": "Direct Object Count"
+          },
+          "direct_type_count": {
+            "type": "integer",
+            "title": "Direct Type Count"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "parent_ids",
+          "direct_object_count",
+          "direct_type_count",
+          "version"
+        ],
+        "title": "TagView"
+      },
+      "TransferStock": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "stock.transfer",
+            "title": "Kind"
+          },
+          "source_holding_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Holding Id"
+          },
+          "source_expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Source Expected Version"
+          },
+          "destination_holding_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Destination Holding Id"
+          },
+          "destination_expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Destination Expected Version"
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "source_holding_id",
+          "source_expected_version",
+          "destination_holding_id",
+          "destination_expected_version",
+          "amount",
+          "unit"
+        ],
+        "title": "TransferStock"
+      },
+      "TypeView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "parent_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Type Id"
+          },
+          "parent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Name"
+          },
+          "abstract": {
+            "type": "boolean",
+            "title": "Abstract"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "parent_type_id",
+          "parent_name",
+          "abstract",
+          "version"
+        ],
+        "title": "TypeView"
+      },
+      "Unit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "factor": {
+            "type": "string",
+            "title": "Factor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "factor"
+        ],
+        "title": "Unit"
+      },
+      "UnitDimension": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "count",
+              "volume",
+              "length",
+              "mass",
+              "area"
+            ],
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "canonical_unit": {
+            "type": "string",
+            "title": "Canonical Unit"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/Unit"
+            },
+            "type": "array",
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "canonical_unit",
+          "units"
+        ],
+        "title": "UnitDimension"
+      },
+      "UpdateAccount": {
+        "properties": {
+          "principal_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Id"
+          },
+          "role_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Role Ids"
+          },
+          "disabled": {
+            "type": "boolean",
+            "title": "Disabled"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "disabled",
+          "expected_version"
+        ],
+        "title": "UpdateAccount"
+      },
+      "UpdatePrincipal": {
+        "properties": {
+          "principal_kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "team",
+              "organization",
+              "project",
+              "site"
+            ],
+            "title": "Principal Kind"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "principal_kind",
+          "display_name",
+          "expected_version"
+        ],
+        "title": "UpdatePrincipal"
+      },
+      "UpdateRole": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Permissions"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "expected_version"
+        ],
+        "title": "UpdateRole"
+      },
+      "UpdateSiteLogo": {
+        "properties": {
+          "logo_base64": {
+            "type": "string",
+            "maxLength": 3000000,
+            "minLength": 1,
+            "title": "Logo Base64"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "logo_base64",
+          "expected_version"
+        ],
+        "title": "UpdateSiteLogo"
+      },
+      "UpdateSiteSettings": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name",
+          "expected_version"
+        ],
+        "title": "UpdateSiteSettings"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
