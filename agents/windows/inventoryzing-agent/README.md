@@ -109,6 +109,8 @@ $env:Inventoryzing__Scanner__TerminalId = 'paste-the-scanner-terminal-id-shown-i
 dotnet run --project .\agents\windows\inventoryzing-agent\src\Inventoryzing.Agent.Scanner.Host
 ```
 
+For a Linux terminal or thin client, use the [Linux Zebra scanner agent](../../linux/inventoryzing-scanner-agent/README.md).
+
 Open **Scanner** in the browser that will be the dedicated terminal and copy its
 **Scanner terminal ID** into `Inventoryzing__Scanner__TerminalId`. The agent then
 binds to that terminal on its first delivery; one service credential cannot later

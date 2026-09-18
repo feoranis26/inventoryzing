@@ -44,11 +44,15 @@ class CreateObject(StrictModel):
     property_values: list["CreateObjectPropertyValue"] = Field(default_factory=list, max_length=100)
     allocate_alias: bool = True
     copy_properties_from: PropertyCopySource | None = None
+    stock_amount: str | None = Field(default=None, min_length=1, max_length=100)
+    stock_unit: str | None = Field(default=None, min_length=1, max_length=40)
 
     @model_validator(mode="after")
     def property_ids_are_unique(self):
         if len({entry.property_id for entry in self.property_values}) != len(self.property_values):
             raise ValueError("Object property IDs must be unique.")
+        if (self.stock_amount is None) != (self.stock_unit is None):
+            raise ValueError("Initial stock amount and unit must be supplied together.")
         return self
 
 
@@ -261,6 +265,20 @@ class TransferStock(StrictModel):
     reason: str = Field(default="", max_length=1000)
 
 
+class SplitStock(StrictModel):
+    kind: Literal["stock.split"]
+    source_holding_id: UUID
+    source_expected_version: int = Field(gt=0)
+    name: Name
+    description: str = Field(default="", max_length=10000)
+    parent_id: UUID | None = None
+    relation: Literal["contained_in", "installed_in", "mounted_in", "located_in"] | None = None
+    amount: str = Field(min_length=1, max_length=100)
+    unit: str = Field(min_length=1, max_length=40)
+    reason: str = Field(default="", max_length=1000)
+    allocate_alias: bool = True
+
+
 Payload = Annotated[
     CreateObject
     | EditObject
@@ -282,7 +300,8 @@ Payload = Annotated[
     | SetStockPolicy
     | CreateStockHolding
     | ChangeStock
-    | TransferStock,
+    | TransferStock
+    | SplitStock,
     Field(discriminator="kind"),
 ]
 
@@ -359,6 +378,7 @@ class TypeView(BaseModel):
     parent_name: str | None
     abstract: bool
     version: int
+    stock_policy: "StockPolicyView | None" = None
 
 
 class TagView(BaseModel):

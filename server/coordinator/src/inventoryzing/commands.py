@@ -31,6 +31,7 @@ from inventoryzing.contracts import (
     SetStockPolicy,
     SetTagParents,
     SetTypePropertyDeclaration,
+    SplitStock,
     TransferStock,
 )
 from inventoryzing.units import DIMENSIONS, normalize_amount
@@ -62,6 +63,7 @@ PERMISSIONS = {
     "stock.consume": "inventory.edit",
     "stock.adjust": "inventory.edit",
     "stock.transfer": "inventory.edit",
+    "stock.split": "inventory.create",
 }
 
 
@@ -89,7 +91,9 @@ def _positive_decimal(value: object, code: str = "INVALID_STOCK_AMOUNT") -> Deci
     return amount
 
 
-def stock_policy_for_type(connection: Connection, type_id: UUID) -> dict:
+def stock_policy_for_type(
+    connection: Connection, type_id: UUID, required: bool = True
+) -> dict | None:
     row = (
         connection.execute(
             text("""
@@ -112,17 +116,23 @@ def stock_policy_for_type(connection: Connection, type_id: UUID) -> dict:
         .mappings()
         .first()
     )
-    if row is None:
+    if row is None and required:
         raise CommandError(
             "STOCK_POLICY_REQUIRED",
             "This object type does not define or inherit a stock policy.",
             409,
         )
-    return dict(row)
+    return dict(row) if row is not None else None
 
 
-def normalize_stock_amount(policy: dict, amount: object, unit: str) -> Decimal:
-    decimal_amount = _positive_decimal(amount)
+def normalize_stock_amount(
+    policy: dict, amount: object, unit: str, allow_zero: bool = False
+) -> Decimal:
+    decimal_amount = Decimal(_decimal_string(amount))
+    if decimal_amount < 0 or (not allow_zero and decimal_amount == 0):
+        raise CommandError(
+            "INVALID_STOCK_AMOUNT", "Stock quantities must be greater than zero.", 422
+        )
     dimension = DIMENSIONS[policy["quantity_dimension"]]
     if unit not in {entry.id for entry in dimension.units}:
         raise CommandError(
@@ -426,7 +436,9 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
             return CommandResult.model_validate(receipt["result"])
 
         payload = command.payload
-        if isinstance(payload, (CreateObject, CreateStockHolding, MoveObject, TransferStock)):
+        if isinstance(
+            payload, (CreateObject, CreateStockHolding, MoveObject, TransferStock, SplitStock)
+        ):
             connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": GRAPH_LOCK})
         if isinstance(payload, (CreateTag, SetTagParents, DeleteDefinition)):
             connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": TAG_GRAPH_LOCK})
@@ -447,6 +459,7 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 SetStockPolicy,
                 ChangeStock,
                 TransferStock,
+                SplitStock,
             ),
         ):
             connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": TYPE_GRAPH_LOCK})
@@ -466,6 +479,10 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
         if isinstance(payload, TransferStock):
             references[payload.source_holding_id] = "object"
             references[payload.destination_holding_id] = "object"
+        if isinstance(payload, SplitStock):
+            references[payload.source_holding_id] = "object"
+            if payload.parent_id:
+                references[payload.parent_id] = "object"
         if isinstance(payload, (EditTag, SetTagParents)):
             references[payload.tag_id] = "tag"
         if isinstance(payload, EditType):
@@ -559,6 +576,9 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     "VERSION_CONFLICT",
                     "The destination holding changed. Refresh before transferring.",
                 )
+        if isinstance(payload, SplitStock):
+            if locked[payload.source_holding_id]["version"] != payload.source_expected_version:
+                raise CommandError("VERSION_CONFLICT", "The source holding changed. Refresh first.")
         if versioned_target is not None and expected_version is not None:
             if locked[versioned_target]["version"] != expected_version:
                 raise CommandError(
@@ -630,7 +650,10 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     alias = allocate_alias(connection, command.authority_site, entity_id)
                 if isinstance(payload, CreateStockHolding):
                     policy = stock_policy_for_type(connection, payload.object_type_id)
-                    amount = normalize_stock_amount(policy, payload.amount, payload.unit)
+                    assert policy is not None
+                    amount = normalize_stock_amount(
+                        policy, payload.amount, payload.unit, allow_zero=True
+                    )
                     connection.execute(
                         text("""
                         INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
@@ -652,6 +675,38 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                             "counterparty": None,
                         }
                     )
+                elif isinstance(payload, CreateObject):
+                    policy = (
+                        stock_policy_for_type(connection, payload.object_type_id, required=False)
+                        if payload.object_type_id
+                        else None
+                    )
+                    if policy is None and payload.stock_amount is not None:
+                        raise CommandError(
+                            "STOCK_TYPE_REQUIRED",
+                            "Initial stock can only be supplied for a stock-configured type.",
+                            422,
+                        )
+                    if policy is not None:
+                        amount = (
+                            normalize_stock_amount(
+                                policy, payload.stock_amount, payload.stock_unit, allow_zero=True
+                            )
+                            if payload.stock_amount is not None
+                            else Decimal("0")
+                        )
+                        connection.execute(
+                            text("""
+                            INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
+                            VALUES (:id, :quantity, :policy_type)
+                        """),
+                            {"id": entity_id, "quantity": amount,
+                             "policy_type": policy["policy_type_id"]},
+                        )
+                        stock_movements.append(
+                            {"holding": entity_id, "operation": "initial", "delta": amount,
+                             "balance": amount, "reason": "", "counterparty": None}
+                        )
             elif isinstance(payload, CreateType):
                 connection.execute(
                     text("""
@@ -844,6 +899,65 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                             "value": json.dumps(normalized) if normalized is not None else None,
                         },
                     )
+        elif isinstance(payload, SplitStock):
+            if command.authority_epoch != 1:
+                raise CommandError(
+                    "AUTHORITY_MISMATCH", "New local entities start in authority epoch 1."
+                )
+            source = stock_holding_for_update(connection, payload.source_holding_id)
+            amount = normalize_stock_amount(source, payload.amount, payload.unit)
+            source_balance = Decimal(source["quantity"]) - amount
+            if not source["allow_negative"] and source_balance < 0:
+                raise CommandError(
+                    "INSUFFICIENT_STOCK", "This split would make the source stock negative.", 409
+                )
+            source_placement = connection.execute(text("""
+                SELECT parent_id, relation FROM iz.placements WHERE object_id=:id
+            """), {"id": payload.source_holding_id}).mappings().one()
+            entity_id = uuid4()
+            version = 1
+            parent_id = (
+                payload.parent_id
+                if payload.parent_id is not None
+                else source_placement["parent_id"]
+            )
+            relation = payload.relation or source_placement["relation"]
+            connection.execute(text("""
+                INSERT INTO iz.entities(id, kind, home_site_id, write_site_id)
+                VALUES (:id, 'object', :site, :site)
+            """), {"id": entity_id, "site": command.authority_site})
+            connection.execute(text("""
+                INSERT INTO iz.objects(id, name, description, object_type_id)
+                VALUES (:id, :name, :description, :type)
+            """), {"id": entity_id, "name": payload.name, "description": payload.description,
+                   "type": source["object_type_id"]})
+            connection.execute(text("""
+                INSERT INTO iz.placements(object_id, parent_id, relation)
+                VALUES (:id, :parent, :relation)
+            """), {"id": entity_id, "parent": parent_id, "relation": relation})
+            connection.execute(text("""
+                INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
+                VALUES (:id, :quantity, :policy)
+            """), {"id": entity_id, "quantity": amount, "policy": source["policy_type_id"]})
+            if payload.allocate_alias:
+                alias = allocate_alias(connection, command.authority_site, entity_id)
+            connection.execute(
+                text("UPDATE iz.stock_holdings SET quantity=:quantity WHERE object_id=:id"),
+                {"id": payload.source_holding_id, "quantity": source_balance},
+            )
+            source_version = connection.scalar(text("""
+                UPDATE iz.entities SET version=version + 1, updated_at=now()
+                WHERE id=:id RETURNING version
+            """), {"id": payload.source_holding_id})
+            additional_subjects.append((payload.source_holding_id, source_version))
+            stock_movements.extend([
+                {"holding": payload.source_holding_id, "operation": "transfer_out",
+                 "delta": -amount,
+                 "balance": source_balance, "reason": payload.reason, "counterparty": entity_id},
+                {"holding": entity_id, "operation": "transfer_in", "delta": amount,
+                 "balance": amount, "reason": payload.reason,
+                 "counterparty": payload.source_holding_id},
+            ])
         else:
             if isinstance(payload, TransferStock):
                 entity_id = payload.source_holding_id
@@ -949,6 +1063,63 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 ):
                     raise CommandError(
                         "ABSTRACT_TYPE", "Abstract object types cannot be assigned to objects."
+                    )
+                target_policy = (
+                    stock_policy_for_type(connection, payload.object_type_id, required=False)
+                    if payload.object_type_id
+                    else None
+                )
+                existing_holding = connection.execute(
+                    text("""
+                    SELECT quantity, policy_type_id FROM iz.stock_holdings
+                    WHERE object_id=:id FOR UPDATE
+                """),
+                    {"id": entity_id},
+                ).mappings().first()
+                if target_policy is None and existing_holding is not None:
+                    # Changing back to a non-stock type deliberately dissolves the
+                    # holding.  Stock is a property of the typed object, so its
+                    # balance and ledger no longer have meaning once that type is
+                    # removed.  Remove movements first because transfers may point
+                    # at this holding as either side of a transaction.
+                    connection.execute(
+                        text("""
+                        DELETE FROM iz.stock_movements
+                        WHERE holding_id=:id OR counterparty_holding_id=:id
+                    """),
+                        {"id": entity_id},
+                    )
+                    connection.execute(
+                        text("DELETE FROM iz.stock_holdings WHERE object_id=:id"),
+                        {"id": entity_id},
+                    )
+                if target_policy is not None and existing_holding is None:
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
+                        VALUES (:id, 0, :policy_type)
+                    """),
+                        {"id": entity_id, "policy_type": target_policy["policy_type_id"]},
+                    )
+                    stock_movements.append(
+                        {"holding": entity_id, "operation": "initial", "delta": Decimal("0"),
+                         "balance": Decimal("0"), "reason": "", "counterparty": None}
+                    )
+                elif (
+                    target_policy is not None
+                    and existing_holding["policy_type_id"] != target_policy["policy_type_id"]
+                ):
+                    if Decimal(existing_holding["quantity"]) != 0:
+                        raise CommandError(
+                            "INCOMPATIBLE_STOCK_TYPE",
+                            "A nonzero holding cannot change to a different stock policy.",
+                            409,
+                        )
+                    connection.execute(
+                        text("""
+                        UPDATE iz.stock_holdings SET policy_type_id=:policy_type WHERE object_id=:id
+                    """),
+                        {"id": entity_id, "policy_type": target_policy["policy_type_id"]},
                     )
                 connection.execute(
                     text("UPDATE iz.objects SET object_type_id = :type WHERE id = :id"),
@@ -1181,6 +1352,36 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                         "allow_negative": payload.allow_negative,
                     },
                 )
+                uninitialized = connection.execute(
+                    text("""
+                    SELECT object.id FROM iz.objects object
+                    LEFT JOIN iz.stock_holdings holding ON holding.object_id=object.id
+                    WHERE object.object_type_id=:type AND holding.object_id IS NULL
+                    FOR UPDATE OF object
+                """),
+                    {"type": entity_id},
+                ).mappings().all()
+                for object_row in uninitialized:
+                    object_id = object_row["id"]
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
+                        VALUES (:id, 0, :policy_type)
+                    """),
+                        {"id": object_id, "policy_type": entity_id},
+                    )
+                    object_version = connection.scalar(
+                        text("""
+                        UPDATE iz.entities SET version=version + 1, updated_at=now()
+                        WHERE id=:id RETURNING version
+                    """),
+                        {"id": object_id},
+                    )
+                    additional_subjects.append((object_id, object_version))
+                    stock_movements.append(
+                        {"holding": object_id, "operation": "initial", "delta": Decimal("0"),
+                         "balance": Decimal("0"), "reason": "", "counterparty": None}
+                    )
             elif isinstance(payload, ChangeStock):
                 holding = stock_holding_for_update(connection, entity_id)
                 amount = (

@@ -968,9 +968,31 @@ def list_types(request: Request):
             connection.execute(
                 text("""
             SELECT type.id, type.name, type.description, type.parent_type_id,
-                   parent.name AS parent_name, type.abstract, entity.version
+                   parent.name AS parent_name, type.abstract, entity.version,
+                   CASE WHEN stock_policy.type_id IS NULL THEN NULL ELSE jsonb_build_object(
+                       'type_id', type.id,
+                       'policy_type_id', stock_policy.type_id,
+                       'policy_type_name', policy_type.name,
+                       'quantity_dimension', stock_policy.quantity_dimension,
+                       'canonical_unit', stock_policy.canonical_unit,
+                       'granularity', stock_policy.granularity::text,
+                       'allow_negative', stock_policy.allow_negative
+                   ) END AS stock_policy
             FROM iz.object_types type JOIN iz.entities entity ON entity.id = type.id
             LEFT JOIN iz.object_types parent ON parent.id = type.parent_type_id
+            LEFT JOIN LATERAL (
+                WITH RECURSIVE lineage(id, depth) AS (
+                    SELECT type.id, 0
+                    UNION ALL
+                    SELECT ancestor.parent_type_id, lineage.depth + 1
+                    FROM iz.object_types ancestor JOIN lineage ON ancestor.id = lineage.id
+                    WHERE ancestor.parent_type_id IS NOT NULL
+                )
+                SELECT policy.* FROM lineage
+                JOIN iz.stock_policies policy ON policy.type_id=lineage.id
+                ORDER BY lineage.depth LIMIT 1
+            ) stock_policy ON true
+            LEFT JOIN iz.object_types policy_type ON policy_type.id=stock_policy.type_id
             WHERE entity.archived_at IS NULL ORDER BY lower(type.name), type.id
         """)
             )

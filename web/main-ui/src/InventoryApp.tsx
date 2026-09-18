@@ -1,10 +1,10 @@
 import { ObjectProperties, PropertiesPage, PropertyDefinitionEditor, PropertyDefinitionForm, PropertyValueForm,
   TypePropertiesEditor } from './Properties'
 import type { PropertyDefinition, PropertyValue } from './Properties'
-import { useDeferredValue, useId, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
-  ActionIcon, Alert, Badge, Breadcrumbs, Button, Checkbox, Group, Loader, Modal,
+  ActionIcon, Alert, Badge, Breadcrumbs, Button, Checkbox, Group, Loader, Menu, Modal,
   MultiSelect, Pagination, PasswordInput, SegmentedControl, Select, Stack, Table, Tabs, Text,
   Textarea, TextInput, Title, Tooltip,
 } from '@mantine/core'
@@ -13,7 +13,7 @@ import { Link, useLocation } from 'wouter'
 import {
   ArrowLeft, ArrowRight, ArrowRightLeft, Box, Boxes, ChevronDown, ChevronRight, FolderTree,
   GitBranch, History, Layers, LogOut, MapPin, Pencil, Plus, RefreshCw, ScanLine,
-  Search, Settings, Tags,
+  Search, Settings, Tags, MoreHorizontal,
 } from 'lucide-react'
 import { ApiError, api, makeCommand, sendCommand } from './api'
 import logoUrl from '../../../assets/branding/inventoryzing.svg?url'
@@ -104,6 +104,7 @@ function Workspace({ session }: { session: Session }) {
   const cache = useQueryClient()
   const [location, navigate] = useLocation()
   const [dialog, setDialog] = useState<Dialog | null>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [scannerStatus, setScannerStatus] = useState<ScannerStatus>({ ready: false })
   const storageKey = `inventoryzing.pending.${session.site_id}.${session.account_id}`
   const [pending, setPending] = useState<Command | null>(() => {
@@ -117,6 +118,41 @@ function Workspace({ session }: { session: Session }) {
   const tagFilterId = /^\/tag\/([^/]+)$/.exec(location)?.[1]
   const scanMoveDestinationId = /^\/scanner\/move\/([^/]+)$/.exec(location)?.[1]
   const can = (permission: string) => session.permissions.includes(permission)
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      const editing = !!target?.closest('input, textarea, select, [contenteditable="true"]')
+      if (event.key === 'Escape') {
+        if (shortcutsOpen) setShortcutsOpen(false)
+        else if (dialog && !pending) { setDialog(null); setError(undefined) }
+        return
+      }
+      if (editing && !(event.key === 'Enter' && (event.ctrlKey || event.metaKey))) return
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault(); setShortcutsOpen(true); return
+      }
+      if (event.altKey && event.key.toLowerCase() === 'n') {
+        event.preventDefault(); navigate('/intake'); return
+      }
+      if (event.altKey && event.key.toLowerCase() === 'p') {
+        const printButton = document.querySelector<HTMLButtonElement>('[data-shortcut-print]')
+        if (printButton && !printButton.disabled) { event.preventDefault(); printButton.click() }
+        return
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault()
+        if (event.shiftKey) document.querySelector<HTMLButtonElement>('[name="no-label"]')?.click()
+        else (target?.closest('form') as HTMLFormElement | null)?.requestSubmit()
+      }
+      if (event.key === '/' && !editing) {
+        event.preventDefault(); navigate('/');
+        window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-inventory-search]')?.focus(), 0)
+      }
+    }
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [dialog, navigate, pending, shortcutsOpen])
 
   async function duplicate(source: InventoryObject | ObjectType, kind: 'object' | 'type') {
     try {
@@ -193,6 +229,12 @@ function Workspace({ session }: { session: Session }) {
     void deliver(command)
   }
 
+  function dismissPending() {
+    sessionStorage.removeItem(storageKey)
+    setPending(null)
+    setError(undefined)
+  }
+
   async function logout() {
     try {
       await api('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': session.csrf_token } })
@@ -230,7 +272,8 @@ function Workspace({ session }: { session: Session }) {
         visible={location === '/scanner' || !!scanMoveDestinationId} />
       {pending && <Alert mb="lg" color="yellow" title={busy ? 'Saving command' : 'Command outcome not confirmed'} role="status">
         <Group justify="space-between" gap="sm"><Text size="sm" className="mono command-id">{pending.command_id}</Text>
-          {!busy && <Button size="xs" variant="light" color="yellow" onClick={() => void deliver(pending)} leftSection={<RefreshCw size={14} />}>Retry original command</Button>}
+          {!busy && <Group gap="xs"><Button size="xs" variant="light" color="yellow" onClick={() => void deliver(pending)} leftSection={<RefreshCw size={14} />}>Retry original command</Button>
+            <Button size="xs" variant="subtle" color="gray" onClick={dismissPending}>Dismiss</Button></Group>}
         </Group>
       </Alert>}
       {error != null && !dialog && <div className="error-block"><Failure error={error} /></div>}
@@ -275,6 +318,17 @@ function Workspace({ session }: { session: Session }) {
             initialTagId={tagFilterId} siteName={session.site_name}
             create={() => setDialog({ kind: 'create', parentId: subtreeId })} canCreate={can('inventory.create') && !pending} />}
     </main>
+    <Modal opened={shortcutsOpen} onClose={() => setShortcutsOpen(false)} title="Keyboard shortcuts" size="sm">
+      <Table withTableBorder><Table.Tbody>
+        <Table.Tr><Table.Td><code>/</code></Table.Td><Table.Td>Focus inventory search</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>Alt+N</code></Table.Td><Table.Td>Open Quick Create</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>Ctrl+Enter</code></Table.Td><Table.Td>Submit the active form</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>Ctrl+Shift+Enter</code></Table.Td><Table.Td>Add without a label in Quick Create</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>Alt+P</code></Table.Td><Table.Td>Print the visible label</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>Esc</code></Table.Td><Table.Td>Close the active dialog</Table.Td></Table.Tr>
+        <Table.Tr><Table.Td><code>?</code></Table.Td><Table.Td>Show this reference</Table.Td></Table.Tr>
+      </Table.Tbody></Table>
+    </Modal>
     <Modal opened={dialog !== null} onClose={() => { if (!pending) { setDialog(null); setError(undefined) } }}
       title={dialog?.kind === 'create' ? 'New object' : dialog?.kind === 'type' ? (dialog.type ? 'Edit object type' : 'New object type')
         : dialog?.kind === 'move' ? 'Move object' : dialog?.kind === 'edit' ? 'Edit object'
@@ -290,7 +344,8 @@ function Workspace({ session }: { session: Session }) {
       closeButtonProps={{ 'aria-label': 'Close dialog' }}
       closeOnClickOutside={!pending} closeOnEscape={!pending} withCloseButton={!pending} size="md" centered>
       {error != null && <div className="error-block"><Failure error={error} /></div>}
-      {pending && !busy && <Button mb="md" fullWidth onClick={() => void deliver(pending)} leftSection={<RefreshCw size={16} />}>Retry original command</Button>}
+      {pending && !busy && <Group mb="md" grow><Button onClick={() => void deliver(pending)} leftSection={<RefreshCw size={16} />}>Retry original command</Button>
+        <Button variant="default" onClick={dismissPending}>Dismiss</Button></Group>}
       {dialog && (dialog.kind === 'tag-create' || dialog.kind === 'tag-edit' || dialog.kind === 'tag-parents'
         ? <TagForm key={dialog.kind} dialog={dialog} busy={busy} disabled={!!pending} submit={submit} />
         : dialog.kind === 'tags'
@@ -379,7 +434,7 @@ function InventoryPage({ create, canCreate, rootId, initialTagId, siteName }: {
     {root.data && <div className="subtree-path"><LocationPath path={root.data.location_path} siteName={siteName} subtreeLinks /></div>}
     <div className="page-title"><div><Text className="eyebrow">{rootId ? 'SUBTREE' : selectedTag ? 'CATEGORY' : 'CATALOG'}</Text><Title order={1}>{root.data?.name ?? selectedTag?.name ?? 'Inventory'} <span className="count">{showList ? query.data?.total ?? '' : ''}</span></Title></div>
       <Button leftSection={<Plus size={17} />} onClick={create} disabled={!canCreate}>New object</Button></div>
-    <div className="list-toolbar"><TextInput aria-label="Search inventory" placeholder="Search inventory" leftSection={<Search size={17} />} value={search}
+    <div className="list-toolbar"><TextInput data-inventory-search aria-label="Search inventory" placeholder="Search inventory" leftSection={<Search size={17} />} value={search}
       onChange={event => { setSearch(event.currentTarget.value); setPage(1) }} />
       <Select aria-label="Filter by tag" placeholder="All tags" searchable clearable value={tagFilter}
         onChange={value => { setTagFilter(value); setPage(1) }} className="filter-control"
@@ -516,19 +571,21 @@ function TypesPage({ create, edit, duplicate, properties, stockPolicy, assign, r
     <Button onClick={create} disabled={!canCreate} leftSection={<Plus size={17} />}>New type</Button></div>
     {query.isPending ? <Loader aria-label="Loading types" /> : query.error ? <Failure error={query.error} /> : query.data.length ?
       <Table.ScrollContainer minWidth={760}><Table verticalSpacing="md"><Table.Thead><Table.Tr><Table.Th>Name</Table.Th><Table.Th>Parent</Table.Th><Table.Th>Tags</Table.Th><Table.Th>Description</Table.Th><Table.Th><span className="sr-only">Actions</span></Table.Th></Table.Tr></Table.Thead>
-        <Table.Tbody>{query.data.map(type => <Table.Tr key={type.id}><Table.Td><Group gap="xs">{type.name}{type.abstract && <Badge variant="light" color="gray">Abstract</Badge>}</Group></Table.Td>
+        <Table.Tbody>{query.data.map(type => <Table.Tr key={type.id}><Table.Td><Group gap="xs">{type.name}{type.abstract && <Badge variant="light" color="gray">Abstract</Badge>}
+          {type.stock_policy && <Badge variant="light" color="blue" title={type.stock_policy.policy_type_id === type.id ? 'Configured on this type' : `Inherited from ${type.stock_policy.policy_type_name}`}>
+            Stock · {type.stock_policy.quantity_dimension}</Badge>}</Group></Table.Td>
           <Table.Td><Text size="sm" c="dimmed">{type.parent_name ?? 'Root'}</Text></Table.Td>
           <Table.Td><EntityTagSummary target={{ id: type.id, name: type.name, version: type.version,
             entityKind: 'object_type' }} edit={() => assign(type)} disabled={!canEdit} compact /></Table.Td>
           <Table.Td>{type.description || <Text c="dimmed">Not set</Text>}</Table.Td>
           <Table.Td><Group gap={2}><Button size="compact-xs" variant="subtle" disabled={!canEdit}
             onClick={() => properties(type)}>Properties</Button>
-            <Button size="compact-xs" variant="subtle" disabled={!canEdit}
-              onClick={() => stockPolicy(type)}>Stock</Button>
-            <IconButton label={`Edit ${type.name}`} disabled={!canEdit} onClick={() => edit(type)}><Pencil size={17} /></IconButton>
             <Button size="compact-xs" variant="subtle" disabled={!canCreate} onClick={() => duplicate(type)}>Duplicate</Button>
-            <Button size="compact-xs" variant="subtle" color="red" disabled={!canEdit}
-              onClick={() => remove(type)}>Delete</Button></Group></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>
+            <Menu shadow="md" width={180} position="bottom-end"><Menu.Target><ActionIcon variant="subtle" color="gray" aria-label={`Edit ${type.name}`} disabled={!canEdit}><MoreHorizontal size={18} /></ActionIcon></Menu.Target>
+              <Menu.Dropdown><Menu.Label>Edit type</Menu.Label><Menu.Item leftSection={<Pencil size={15} />} onClick={() => edit(type)}>Details and hierarchy</Menu.Item>
+                <Menu.Item leftSection={<Boxes size={15} />} onClick={() => stockPolicy(type)}>Stock configuration</Menu.Item>
+                <Menu.Divider /><Menu.Item color="red" onClick={() => remove(type)}>Delete type</Menu.Item>
+              </Menu.Dropdown></Menu></Group></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>
       : <Empty title="No object types yet" icon={<Layers size={32} />} />}</>
 }
 
@@ -704,6 +761,7 @@ function ObjectForm({ dialog, busy, disabled, submit }: {
   const [abstractType, setAbstractType] = useState(editedType?.abstract ?? false)
   const types = useQuery({ queryKey: ['inventory', 'types'], queryFn: () => api<ObjectType[]>('/types'),
     enabled: dialog.kind === 'create' || dialog.kind === 'object-type' || dialog.kind === 'type' })
+  const selectedObjectType = objectType ? types.data?.find(type => type.id === objectType) : undefined
   const descendants = editedType && types.data ? (() => {
     const result: ObjectType[] = []
     const pending = [editedType.id]
@@ -716,14 +774,20 @@ function ObjectForm({ dialog, busy, disabled, submit }: {
     return result
   })() : []
   const reparenting = !copying && !!editedType && parentType !== editedType.parent_type_id
+  const droppingStock = dialog.kind === 'object-type' && !!object?.stock &&
+    (!objectType || (selectedObjectType !== undefined && !selectedObjectType.stock_policy))
   function save(event: FormEvent) {
     event.preventDefault()
     if (dialog.kind === 'move') submit({ kind: 'object.move', object_id: dialog.object.id,
       expected_version: dialog.object.version, parent_id: parent, relation: relation as 'contained_in' }, dialog.object.authority_epoch)
     else if (dialog.kind === 'edit') submit({ kind: 'object.edit', object_id: dialog.object.id,
       expected_version: dialog.object.version, name, description }, dialog.object.authority_epoch)
-    else if (dialog.kind === 'object-type') submit({ kind: 'object.type.set', object_id: dialog.object.id,
-      expected_version: dialog.object.version, object_type_id: objectType }, dialog.object.authority_epoch)
+    else if (dialog.kind === 'object-type') {
+      if (droppingStock && !window.confirm(
+        'This object is a stock holding. Changing it to a non-stock type will permanently remove its stock balance and movement history. Continue?')) return
+      submit({ kind: 'object.type.set', object_id: dialog.object.id,
+        expected_version: dialog.object.version, object_type_id: objectType }, dialog.object.authority_epoch)
+    }
     else if (dialog.kind === 'type' && dialog.type) submit({ kind: 'type.edit', type_id: dialog.type.id,
       expected_version: dialog.type.version, name, description, parent_type_id: parentType, abstract: abstractType })
     else if (dialog.kind === 'type') submit({ kind: 'type.create', name, description,
@@ -740,7 +804,8 @@ function ObjectForm({ dialog, busy, disabled, submit }: {
         data={[{ value: 'contained_in', label: 'Contained in' }, { value: 'located_in', label: 'Located in' }, { value: 'installed_in', label: 'Installed in' }, { value: 'mounted_in', label: 'Mounted in' }]} /></>
       : dialog.kind === 'object-type' ? <><Text fw={500}>{object?.name}</Text>
         <Select<string> label="Object type" placeholder="Unspecified" value={objectType} onChange={setObjectType} clearable searchable
-          data={(types.data ?? []).filter(type => !type.abstract).map(type => ({ value: type.id, label: type.name }))} error={types.error ? errorText(types.error) : undefined} /></>
+          data={(types.data ?? []).filter(type => !type.abstract).map(type => ({ value: type.id, label: type.name }))} error={types.error ? errorText(types.error) : undefined} />
+        {droppingStock && <Alert color="orange">Changing to an unspecified or non-stock type removes this holding's quantity and stock history.</Alert>}</>
       : <><TextInput label="Name" value={name} onChange={event => setName(event.currentTarget.value)} required maxLength={160} autoFocus />
         <Textarea label="Description" value={description} onChange={event => setDescription(event.currentTarget.value)} maxLength={10000} minRows={3} autosize /></>}
     {dialog.kind === 'create' && <><Select<string> label="Object type" placeholder="Unspecified" value={objectType} onChange={setObjectType} clearable searchable

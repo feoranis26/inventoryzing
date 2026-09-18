@@ -37,7 +37,6 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
   const [relation, setRelation] = useIntakeState<Placement>(scope, 'relation', 'contained_in')
   const [tagIds, setTagIds] = useIntakeState<string[]>(scope, 'tags', [])
   const [allocateAlias, setAllocateAlias] = useIntakeState(scope, 'allocateAlias', true)
-  const [stockHolding, setStockHolding] = useIntakeState(scope, 'stockHolding', false)
   const [stockAmount, setStockAmount] = useIntakeState(scope, 'stockAmount', '')
   const [stockUnit, setStockUnit] = useIntakeState(scope, 'stockUnit', '')
   const [templateId, setTemplateId] = useIntakeState<string | null>(scope, 'template', null)
@@ -87,7 +86,7 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
     queryFn: () => api<PropertyValue[]>(`/types/${typeId}/properties`), enabled: !!typeId })
   const stockPolicy = useQuery({ queryKey: ['stock-policy', typeId],
     queryFn: () => api<{ canonical_unit: string, quantity_dimension: string }>(`/types/${typeId}/stock-policy`),
-    enabled: stockHolding && !!typeId, retry: false })
+    enabled: !!typeId, retry: false })
   useEffect(() => { if (stockPolicy.data && !stockUnit) setStockUnit(stockPolicy.data.canonical_unit) }, [stockPolicy.data, stockUnit, setStockUnit])
   const selectedTemplate = templates.data?.find(template => template.id === templateId)
     ?? templates.data?.find(template => template.is_default) ?? templates.data?.[0]
@@ -135,7 +134,6 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
   async function add(event: React.FormEvent, withLabel = true) {
     event.preventDefault()
     if (!name.trim() || propertiesUnavailable || copyId || copying || submitting.current ||
-      (stockHolding && (!typeId || !stockAmount || !stockPolicy.data)) ||
       (withLabel && (printing.current || printerBusy || !selectedTemplate))) return
     submitting.current = true
     setBusy(true); setError(undefined)
@@ -157,13 +155,11 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
         }
         property_values.push({ property_id: field.id!, mode: 'value', value })
       })
-      const payload = stockHolding ? {
-        kind: 'stock.holding.create', name: name.trim(), description, object_type_id: typeId!,
-        parent_id: parentId, relation, amount: stockAmount, unit: stockUnit || stockPolicy.data!.canonical_unit,
-        allocate_alias: allocateAlias,
-      } : {
+      const payload = {
         kind: 'object.create', name: name.trim(), description, object_type_id: typeId,
         parent_id: parentId, relation, tag_ids: tagIds, property_values, allocate_alias: allocateAlias,
+        stock_amount: stockPolicy.data ? stockAmount || '0' : null,
+        stock_unit: stockPolicy.data ? stockUnit || stockPolicy.data.canonical_unit : null,
       }
       const created = await sendCommand(session, makeCommand(session, payload as never))
       const entry: IntakeEntry = { id: created.entity_id, name: name.trim(), print: 'not-requested',
@@ -196,22 +192,20 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
       <Group grow align="start"><Select label="Parent" value={parentId} onChange={value => setParentId(value ? String(value) : null)} clearable searchable
         data={[...parentOptions.values()].map(item => ({ value: item.id, label: `${item.name}${item.alias ? ` (${item.alias})` : ''}` }))} />
         <Select label="Initial placement" value={relation} onChange={value => setRelation((value ?? 'contained_in') as Placement)} data={placementOptions} /></Group>
-      <Checkbox label="This is a fungible stock holding" checked={stockHolding}
-        onChange={event => setStockHolding(event.currentTarget.checked)} disabled={!typeId} />
-      {stockHolding && <Group grow align="start"><TextInput label="Initial quantity" value={stockAmount} inputMode="decimal" required
+      {stockPolicy.data && <Group grow align="start"><TextInput label="Initial quantity" value={stockAmount} inputMode="decimal"
         onChange={event => setStockAmount(event.currentTarget.value)} />
         <TextInput label="Unit" value={stockUnit || stockPolicy.data?.canonical_unit || ''} readOnly
-          description={stockPolicy.data ? `${stockPolicy.data.quantity_dimension} stock` : stockPolicy.error ? 'This type has no stock policy.' : 'Loading stock policy…'} /></Group>}
-      {!stockHolding && <MultiSelect label="Direct tags" value={tagIds} onChange={setTagIds} searchable clearable hidePickedOptions
-        data={(tags.data ?? []).map(tag => ({ value: tag.id, label: tag.name }))} />}
-      {typeId && !stockHolding && <PropertyOverrides fields={propertyValues} values={values} setValues={setValues} />}
+          description={`Creates a ${stockPolicy.data.quantity_dimension} holding. Leave blank to start at zero.`} /></Group>}
+      <MultiSelect label="Direct tags" value={tagIds} onChange={setTagIds} searchable clearable hidePickedOptions
+        data={(tags.data ?? []).map(tag => ({ value: tag.id, label: tag.name }))} />
+      {typeId && <PropertyOverrides fields={propertyValues} values={values} setValues={setValues} />}
       <Group grow align="start"><Select label="Label template" value={selectedTemplate?.id ?? null} onChange={value => setTemplateId(value ? String(value) : null)} searchable
         data={(templates.data ?? []).map(template => ({ value: template.id, label: `${template.name}${template.is_default ? ' · default' : ''}` }))} />
         <Checkbox mt={34} label="Allocate a local ID" checked={allocateAlias} onChange={event => setAllocateAlias(event.currentTarget.checked)} /></Group>
       {printerBusy && <Alert color="blue">Waiting for the previous label before another label can be requested.</Alert>}
       <IntakeLabelPreview template={selectedTemplate} object={entries[0]} />
-      <Group><Button type="submit" loading={busy} disabled={propertiesUnavailable || !!copyId || copying || printerBusy || !selectedTemplate || (stockHolding && !stockPolicy.data)} leftSection={<Plus size={17} />}>Add and print label</Button>
-        <Button type="submit" name="no-label" variant="default" disabled={propertiesUnavailable || !!copyId || copying || busy || (stockHolding && !stockPolicy.data)}>Add with no label</Button>
+      <Group><Button type="submit" loading={busy} disabled={propertiesUnavailable || !!copyId || copying || printerBusy || !selectedTemplate} leftSection={<Plus size={17} />}>Add and print label</Button>
+        <Button type="submit" name="no-label" variant="default" disabled={propertiesUnavailable || !!copyId || copying || busy}>Add with no label</Button>
         <Button variant="light" onClick={() => setCreator('tag')}>Add tag</Button><Button variant="light" onClick={() => setCreator('type')}>Add type</Button>
         <Button variant="light" onClick={() => setCreator('property')}>Add property</Button></Group>
     </Stack></form>

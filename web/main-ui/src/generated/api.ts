@@ -993,7 +993,7 @@ export interface components {
              */
             command_id: string;
             /** Payload */
-            payload: components["schemas"]["CreateObject"] | components["schemas"]["EditObject"] | components["schemas"]["SetObjectType"] | components["schemas"]["MoveObject"] | components["schemas"]["AllocateAlias"] | components["schemas"]["CreateType"] | components["schemas"]["EditType"] | components["schemas"]["CreatePropertyDefinition"] | components["schemas"]["SetTypePropertyDeclaration"] | components["schemas"]["SetPropertyValue"] | components["schemas"]["EditPropertyDefinition"] | components["schemas"]["DeleteDefinition"] | components["schemas"]["ConvertPropertyUnit"] | components["schemas"]["CreateTag"] | components["schemas"]["EditTag"] | components["schemas"]["SetTagParents"] | components["schemas"]["SetEntityTags"] | components["schemas"]["SetStockPolicy"] | components["schemas"]["CreateStockHolding"] | components["schemas"]["ChangeStock"] | components["schemas"]["TransferStock"];
+            payload: components["schemas"]["CreateObject"] | components["schemas"]["EditObject"] | components["schemas"]["SetObjectType"] | components["schemas"]["MoveObject"] | components["schemas"]["AllocateAlias"] | components["schemas"]["CreateType"] | components["schemas"]["EditType"] | components["schemas"]["CreatePropertyDefinition"] | components["schemas"]["SetTypePropertyDeclaration"] | components["schemas"]["SetPropertyValue"] | components["schemas"]["EditPropertyDefinition"] | components["schemas"]["DeleteDefinition"] | components["schemas"]["ConvertPropertyUnit"] | components["schemas"]["CreateTag"] | components["schemas"]["EditTag"] | components["schemas"]["SetTagParents"] | components["schemas"]["SetEntityTags"] | components["schemas"]["SetStockPolicy"] | components["schemas"]["CreateStockHolding"] | components["schemas"]["ChangeStock"] | components["schemas"]["TransferStock"] | components["schemas"]["SplitStock"];
         };
         /** CommandResult */
         CommandResult: {
@@ -1089,6 +1089,10 @@ export interface components {
              */
             allocate_alias: boolean;
             copy_properties_from?: components["schemas"]["PropertyCopySource"] | null;
+            /** Stock Amount */
+            stock_amount?: string | null;
+            /** Stock Unit */
+            stock_unit?: string | null;
         };
         /** CreateObjectPropertyValue */
         CreateObjectPropertyValue: {
@@ -2237,6 +2241,46 @@ export interface components {
             /** Logo Version */
             logo_version?: number | null;
         };
+        /** SplitStock */
+        SplitStock: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "stock.split";
+            /**
+             * Source Holding Id
+             * Format: uuid
+             */
+            source_holding_id: string;
+            /** Source Expected Version */
+            source_expected_version: number;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Relation */
+            relation?: ("contained_in" | "installed_in" | "mounted_in" | "located_in") | null;
+            /** Amount */
+            amount: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Allocate Alias
+             * @default true
+             */
+            allocate_alias: boolean;
+        };
         /** StockHoldingView */
         StockHoldingView: {
             /** Quantity */
@@ -2371,6 +2415,7 @@ export interface components {
             abstract: boolean;
             /** Version */
             version: number;
+            stock_policy?: components["schemas"]["StockPolicyView"] | null;
         };
         /** Unit */
         Unit: {

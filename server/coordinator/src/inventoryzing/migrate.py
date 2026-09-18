@@ -46,8 +46,9 @@ def main() -> None:
                 GRANT INSERT, DELETE ON iz.tag_edges, iz.entity_tags TO inventoryzing_app;
                 GRANT INSERT, UPDATE, DELETE ON iz.type_property_declarations,
                     iz.property_values TO inventoryzing_app;
-                GRANT INSERT, UPDATE ON iz.stock_policies, iz.stock_holdings TO inventoryzing_app;
-                GRANT INSERT ON iz.stock_movements TO inventoryzing_app;
+                GRANT INSERT, UPDATE ON iz.stock_policies TO inventoryzing_app;
+                GRANT INSERT, UPDATE, DELETE ON iz.stock_holdings TO inventoryzing_app;
+                GRANT INSERT, DELETE ON iz.stock_movements TO inventoryzing_app;
                 GRANT INSERT ON iz.identifiers, iz.domain_events, iz.event_subjects,
                     iz.replication_outbox, iz.command_receipts TO inventoryzing_app;
                 GRANT UPDATE(result) ON iz.command_receipts TO inventoryzing_app;

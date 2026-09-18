@@ -2527,6 +2527,9 @@
               },
               {
                 "$ref": "#/components/schemas/TransferStock"
+              },
+              {
+                "$ref": "#/components/schemas/SplitStock"
               }
             ],
             "title": "Payload",
@@ -2548,6 +2551,7 @@
                 "stock.holding.create": "#/components/schemas/CreateStockHolding",
                 "stock.policy.set": "#/components/schemas/SetStockPolicy",
                 "stock.receive": "#/components/schemas/ChangeStock",
+                "stock.split": "#/components/schemas/SplitStock",
                 "stock.transfer": "#/components/schemas/TransferStock",
                 "tag.create": "#/components/schemas/CreateTag",
                 "tag.edit": "#/components/schemas/EditTag",
@@ -2791,6 +2795,32 @@
                 "type": "null"
               }
             ]
+          },
+          "stock_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Amount"
+          },
+          "stock_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Unit"
           }
         },
         "additionalProperties": false,
@@ -5488,6 +5518,100 @@
         ],
         "title": "SiteSettingsView"
       },
+      "SplitStock": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "stock.split",
+            "title": "Kind"
+          },
+          "source_holding_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Holding Id"
+          },
+          "source_expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Source Expected Version"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "contained_in",
+                  "installed_in",
+                  "mounted_in",
+                  "located_in"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "default": ""
+          },
+          "allocate_alias": {
+            "type": "boolean",
+            "title": "Allocate Alias",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "source_holding_id",
+          "source_expected_version",
+          "name",
+          "amount",
+          "unit"
+        ],
+        "title": "SplitStock"
+      },
       "StockHoldingView": {
         "properties": {
           "quantity": {
@@ -5771,6 +5895,16 @@
           "version": {
             "type": "integer",
             "title": "Version"
+          },
+          "stock_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockPolicyView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

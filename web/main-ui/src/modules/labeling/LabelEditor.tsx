@@ -5,13 +5,13 @@ import {
   Table, Text, TextInput, Title,
 } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Braces, CopyPlus, Plus, Save, Send, Trash2 } from 'lucide-react'
+import { Braces, CopyPlus, Plus, Printer, Save, Send, Trash2 } from 'lucide-react'
 
 import { api } from '../../api'
 import type { PropertyDefinition } from '../../Properties'
 import inventoryzingLogoUrl from '../../../../../assets/branding/inventoryzing.svg?url'
 import type {
-  LabelElement, LabelTemplate, MediaPreset, ObjectPage, PrinterMedia, SaveLabelTemplate,
+  LabelElement, LabelTemplate, MediaPreset, ObjectPage, PrinterMedia, PrintRequest, SaveLabelTemplate,
 } from '../../api'
 
 const kinds: { value: LabelElement['kind'], label: string }[] = [
@@ -72,6 +72,8 @@ export function LabelEditor({ csrfToken, canManage }: {
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [printing, setPrinting] = useState(false)
+  const [printJobId, setPrintJobId] = useState<string>()
   const [error, setError] = useState<unknown>()
   const [previewVersion, setPreviewVersion] = useState(0)
   const [placeholderReferenceOpen, setPlaceholderReferenceOpen] = useState(false)
@@ -90,6 +92,14 @@ export function LabelEditor({ csrfToken, canManage }: {
       return api<ObjectPage>(`/objects?${parameters}`)
     },
   })
+  const printJob = useQuery({ queryKey: ['label-editor-print-request', printJobId],
+    queryFn: ({ signal }) => api<PrintRequest>(`/print-requests/${printJobId}`, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
+    }), enabled: !!printJobId, retry: false, refetchIntervalInBackground: true,
+    refetchInterval: query => {
+      const state = query.state.data?.state
+      return !state || state === 'Queued' || state === 'Claimed' || state === 'Unknown' ? 250 : false
+    } })
 
   const initialTemplate = templates.data?.find(template => template.is_default) ?? templates.data?.[0]
   const activeTemplate = templateId === undefined ? initialTemplate
@@ -145,7 +155,7 @@ export function LabelEditor({ csrfToken, canManage }: {
     setSelectedElement(element.id)
   }
 
-  async function save() {
+  async function save(): Promise<LabelTemplate | null> {
     setSaving(true)
     setError(undefined)
     try {
@@ -157,7 +167,27 @@ export function LabelEditor({ csrfToken, canManage }: {
       setDraft(fromTemplate(saved))
       await cache.invalidateQueries({ queryKey: ['label-templates'] })
       setPreviewVersion(version => version + 1)
-    } catch (failure) { setError(failure) } finally { setSaving(false) }
+      return saved
+    } catch (failure) { setError(failure); return null } finally { setSaving(false) }
+  }
+
+  async function printPreview() {
+    if (!previewObjectId || !activeTemplateId) return
+    setPrinting(true)
+    setError(undefined)
+    setPrintJobId(undefined)
+    try {
+      let templateId = activeTemplateId
+      if (editedDraft && canManage) {
+        const saved = await save()
+        if (!saved) return
+        templateId = saved.id
+      }
+      const created = await api<PrintRequest>('/print-requests', { method: 'POST',
+        headers: { 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({ object_id: previewObjectId, template_id: templateId, copies: 1 }) })
+      setPrintJobId(created.id)
+    } catch (failure) { setError(failure) } finally { setPrinting(false) }
   }
 
   async function publish() {
@@ -212,6 +242,14 @@ export function LabelEditor({ csrfToken, canManage }: {
   const rotated = draft.definition.orientation === 'rotated'
   const marginX = rotated ? (selectedPreset?.margin_y_mm ?? 0) : (selectedPreset?.margin_x_mm ?? 0)
   const marginY = rotated ? (selectedPreset?.margin_x_mm ?? 0) : (selectedPreset?.margin_y_mm ?? 0)
+  const mediaMatches = !media.data?.available ||
+    (media.data.width_mm === draft.width_mm &&
+      (draft.media_kind === 'continuous' || media.data.height_mm === draft.height_mm) &&
+      media.data.media_kind === draft.media_kind)
+  const directPrintSupported = presets.data?.some(preset =>
+    preset.width_mm === draft.width_mm &&
+    (preset.media_kind === 'continuous' || preset.height_mm === draft.height_mm) &&
+    preset.media_kind === draft.media_kind)
   return <section className="label-editor-page">
     <Group justify="space-between" mb="lg"><div><Text className="eyebrow">LABELING</Text>
       <Title order={1}>Label templates</Title></div>
@@ -311,6 +349,15 @@ export function LabelEditor({ csrfToken, canManage }: {
           {(draft.height_mm - 2 * marginY).toFixed(1)} mm.
           Content in shaded margins will be clipped.
         </Text>}
+        {printJob.error && !printJob.data && <Alert color="red" mt="sm">Print status unavailable: {errorText(printJob.error)}</Alert>}
+        {printJob.data && <Alert color={printJob.data.state === 'Completed' ? 'green' :
+          printJob.data.state === 'Rejected' || printJob.data.state === 'Reset' || printJob.data.state === 'Unknown' ? 'red' : 'blue'} mt="sm">
+          Print test: {printJob.data.state === 'Completed' ? 'Printed' : printJob.data.state}
+          {printJob.data.detail && <Text size="sm">{printJob.data.detail}</Text>}
+        </Alert>}
+        <Button mt="sm" data-shortcut-print leftSection={<Printer size={16} />} loading={printing}
+          disabled={!previewObjectId || !activeTemplateId || !directPrintSupported || !mediaMatches}
+          onClick={() => void printPreview()}>Print test label</Button>
       </Paper>
       <Stack>
         <Text fw={600}>Selected object</Text>

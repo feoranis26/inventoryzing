@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY agents/windows/inventoryzing-agent/ ./
-RUN dotnet restore Inventoryzing.Agent.sln --locked-mode
+RUN dotnet restore src/Inventoryzing.Agent.Printer.Host/Inventoryzing.Agent.Printer.Host.csproj --locked-mode
 RUN dotnet publish src/Inventoryzing.Agent.Printer.Host/Inventoryzing.Agent.Printer.Host.csproj \
     --configuration Release --output /out --no-restore
 

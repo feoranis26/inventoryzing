@@ -107,7 +107,7 @@ export function LabelPanel({ object, csrfToken, disabled, allocate }: {
     </Alert>}
     <Group justify="center" gap="xs"><Button component="a" href={source || undefined} download={`inventoryzing-${object.alias ?? object.id}.svg`} disabled={!source} variant="default" size="xs" leftSection={<Download size={14} />}>SVG</Button>
       <Button component="a" href={managedSource || undefined} download={`inventoryzing-${object.alias ?? object.id}.png`} disabled={!managedSource} variant="default" size="xs" leftSection={<Download size={14} />}>PNG</Button>
-      <Button size="xs" leftSection={<Printer size={14} />} loading={printing}
+      <Button size="xs" data-shortcut-print leftSection={<Printer size={14} />} loading={printing}
         disabled={disabled || !selectedTemplate || !mediaMatches || !directPrintSupported}
         onClick={() => void printTag()}>
         {printError ? 'Retry print request' : 'Print tag'}</Button></Group>

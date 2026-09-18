@@ -34,7 +34,7 @@ For step-by-step guidance on tags, properties, stock, scanning, labels, and admi
 
 ## Labels and scanners
 
-You can download an object's QR label or use browser printing. Direct Brother QL-820NWB printing and Zebra DS22 scanning need an optional device agent. Follow the [device setup guide](agents/windows/inventoryzing-agent/README.md) to connect them.
+You can download an object's QR label or use browser printing. Direct Brother QL-820NWB printing and Zebra DS22 scanning need an optional device agent. Follow the [device setup guide](agents/windows/inventoryzing-agent/README.md) for Windows, or the [Linux Zebra scanner agent guide](agents/linux/inventoryzing-scanner-agent/README.md) for a Linux terminal.
 
 Choose a label template that matches the installed roll. Preview it with an inventory object before printing. Local identifiers such as `I000042` belong to this installation.
 
@@ -59,7 +59,15 @@ Back up before updating, then rebuild and start with `docker compose up --build 
 
 Set up and verify [database backups and restores](docs/operations/backup-restore.md) before relying on the installation. Backup scheduling, retention, and failure notifications need to be configured separately.
 
-The supplied Compose setup serves HTTP on this computer only. Network deployment requires HTTPS and changes to the coordinator's `IZ_PUBLIC_ORIGIN`, `IZ_ALLOWED_HOSTS`, and `IZ_SECURE_COOKIES` settings in Compose; adding them to `.env` alone does not override the supplied configuration. Keep the database private.
+The supplied Compose setup can serve the coordinator on the local network. For a kiosk using Tailscale, set `IZ_BIND_ADDRESS` to the coordinator computer's Tailnet IP, set `IZ_PUBLIC_ORIGIN` to the same `http://<tailnet-ip>:8088` address, and include that IP in `IZ_ALLOWED_HOSTS`. For example:
+
+```dotenv
+IZ_BIND_ADDRESS=100.x.y.z
+IZ_PUBLIC_ORIGIN=http://100.x.y.z:8088
+IZ_ALLOWED_HOSTS=["100.x.y.z","localhost","127.0.0.1"]
+```
+
+Then rebuild and start the stack. The kiosk opens the Tailnet URL; PostgreSQL remains bound to localhost and is never exposed to the kiosk.
 
 Keep the app connected while making changes. It does not provide an offline work queue. If a save fails, use its retry action; if you closed the tab, inspect the object and its history before repeating the action.
 

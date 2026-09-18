@@ -6,13 +6,13 @@ using Inventoryzing.Agent.Core;
 
 namespace Inventoryzing.Agent.Zebra;
 
-internal sealed record ZebraBarcodeFrame(
+public sealed record ZebraBarcodeFrame(
     ScanSource Source,
     byte[] PayloadBytes,
     int DataType,
     string Symbology);
 
-internal static class ZebraCoreScannerXml
+public static class ZebraCoreScannerXml
 {
     private const int MaximumXmlCharacters = 1_048_576;
 

@@ -1,0 +1,30 @@
+# Run on the Linux kiosk, independently of the coordinator's database stack.
+services:
+  scanner-agent:
+    build:
+      context: ..
+      dockerfile: deploy/docker/scanner-agent.Dockerfile
+      additional_contexts:
+        zebra-sdk: ${IZ_ZEBRA_SDK_DIR:-../.local/zebra-sdk}
+    restart: unless-stopped
+    init: true
+    environment:
+      Inventoryzing__Agent__DataDirectory: /tmp/inventoryzing-scanner
+      Inventoryzing__Scanner__Enabled: "true"
+      Inventoryzing__Scanner__CoordinatorUri: ${IZ_SCANNER_COORDINATOR_URI:?Set coordinator URL reachable from kiosk}
+      Inventoryzing__Scanner__CredentialFile: /run/secrets/scanner-token
+      Inventoryzing__Scanner__TerminalId: ${IZ_SCANNER_TERMINAL_ID:?Set terminal ID from kiosk browser}
+    volumes:
+      - type: bind
+        source: ${IZ_SCANNER_TOKEN_FILE:?Set absolute path to scanner token}
+        target: /run/secrets/scanner-token
+        read_only: true
+        bind:
+          create_host_path: false
+      - /dev/bus/usb:/dev/bus/usb
+      - /run/udev:/run/udev:ro
+    # USB bus mount plus major-number permission permits USB reconnects.
+    # No privileged mode, host network, database volume, or published ports.
+    device_cgroup_rules:
+      - 'c 189:* rw'
+    stop_grace_period: 15s

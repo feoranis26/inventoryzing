@@ -7,11 +7,11 @@ services:
     image: inventoryzing-coordinator:local
     environment:
       IZ_DATABASE_URL: postgresql+psycopg://inventoryzing_app:${IZ_RUNTIME_PASSWORD:?Set IZ_RUNTIME_PASSWORD in .env}@db:5432/inventoryzing
-      IZ_PUBLIC_ORIGIN: http://localhost:${IZ_HTTP_PORT:-8088}
+      IZ_PUBLIC_ORIGIN: ${IZ_PUBLIC_ORIGIN:-http://localhost:8088}
       IZ_SECURE_COOKIES: "false"
-      IZ_ALLOWED_HOSTS: '["localhost", "127.0.0.1", "coordinator"]'
+      IZ_ALLOWED_HOSTS: ${IZ_ALLOWED_HOSTS:-["localhost","127.0.0.1","coordinator","*"]}
     ports:
-      - "127.0.0.1:${IZ_HTTP_PORT:-8088}:8088"
+      - "${IZ_BIND_ADDRESS:-127.0.0.1}:${IZ_HTTP_PORT:-8088}:8088"
     depends_on:
       migrate:
         condition: service_completed_successfully

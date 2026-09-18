@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { Alert, Button, Group, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Alert, Button, Divider, Group, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from '../../api'
@@ -64,6 +64,12 @@ export function StockHoldingControls({ object, disabled, submit }: {
 }) {
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
+  const [mode, setMode] = useState<'transfer' | 'split' | null>(null)
+  const [destinationId, setDestinationId] = useState<string | null>(null)
+  const [splitName, setSplitName] = useState(`${object.name} (split)`)
+  const [splitParentId, setSplitParentId] = useState<string | null>(object.parent_id)
+  const objects = useQuery({ queryKey: ['stock-holding-picker', object.stock?.policy_type_id],
+    queryFn: () => api<{ items: InventoryObject[] }>('/objects?limit=200'), enabled: mode !== null })
   if (!object.stock) return null
   const run = (kind: 'stock.receive' | 'stock.consume' | 'stock.adjust') => {
     if (!amount.trim()) return
@@ -79,6 +85,31 @@ export function StockHoldingControls({ object, disabled, submit }: {
     </Group><Group mt="xs"><Button size="xs" onClick={() => run('stock.receive')} disabled={disabled || !amount}>Receive</Button>
       <Button size="xs" variant="default" onClick={() => run('stock.consume')} disabled={disabled || !amount}>Consume</Button>
       <Button size="xs" variant="light" onClick={() => run('stock.adjust')} disabled={disabled || !amount}>Adjust</Button>
-    </Group>
+      <Button size="xs" variant="light" disabled={disabled}
+        onClick={() => setMode(mode === 'transfer' ? null : 'transfer')}>Transfer</Button>
+      <Button size="xs" variant="light" disabled={disabled}
+        onClick={() => setMode(mode === 'split' ? null : 'split')}>Split</Button>
+    </Group>{mode && <Stack mt="md" gap="xs"><Divider />
+      {mode === 'transfer' ? <><Select label="Transfer to holding" value={destinationId} onChange={value => setDestinationId(value ? String(value) : null)} searchable
+        placeholder="Choose an existing compatible holding" data={(objects.data?.items ?? [])
+          .filter(item => item.id !== object.id && item.stock?.policy_type_id === object.stock?.policy_type_id)
+          .map(item => ({ value: item.id, label: `${item.name} (${item.stock?.quantity} ${item.stock?.canonical_unit})` }))} />
+        <Button size="xs" disabled={disabled || !amount || !destinationId} onClick={() => {
+          const destination = objects.data?.items.find(item => item.id === destinationId)
+          if (!destination) return
+          submit({ kind: 'stock.transfer', source_holding_id: object.id, source_expected_version: object.version,
+            destination_holding_id: destination.id, destination_expected_version: destination.version,
+            amount, unit: object.stock!.canonical_unit, reason }, object.authority_epoch)
+        }}>Transfer {amount || 'quantity'}</Button></>
+        : <><TextInput label="New holding name" value={splitName} onChange={event => setSplitName(event.currentTarget.value)} required />
+          <Select label="Place new holding in" value={splitParentId} onChange={value => setSplitParentId(value ? String(value) : null)} clearable searchable
+            placeholder="Same location as source" data={(objects.data?.items ?? []).filter(item => item.id !== object.id)
+              .map(item => ({ value: item.id, label: item.name }))} />
+          <Button size="xs" disabled={disabled || !amount || !splitName.trim()} onClick={() => submit({
+            kind: 'stock.split', source_holding_id: object.id, source_expected_version: object.version,
+            name: splitName.trim(), description: '', parent_id: splitParentId, amount, unit: object.stock!.canonical_unit,
+            reason, allocate_alias: true,
+          }, object.authority_epoch)}>Create split holding</Button></>}
+    </Stack>}
   </section>
 }

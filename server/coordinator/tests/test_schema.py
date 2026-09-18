@@ -15,7 +15,7 @@ def test_schema_and_receipt_history_are_separate():
         with engine.connect() as connection:
             assert (
                 connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0013_stock_holdings"
+                == "0014_stock_holding_backfill"
             )
             tables = set(
                 connection.scalars(
@@ -60,5 +60,17 @@ def test_schema_and_receipt_history_are_separate():
             """)
             )
             assert dependencies == 0
+            runtime_role_exists = connection.scalar(
+                text("SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='inventoryzing_app')")
+            )
+            if runtime_role_exists:
+                assert connection.scalar(text(
+                    "SELECT has_table_privilege('inventoryzing_app', "
+                    "'iz.stock_holdings', 'DELETE')"
+                ))
+                assert connection.scalar(text(
+                    "SELECT has_table_privilege('inventoryzing_app', "
+                    "'iz.stock_movements', 'DELETE')"
+                ))
     finally:
         engine.dispose()

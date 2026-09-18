@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventoryzing.Agent.Printer
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventoryzing.Agent.Scanner.Host", "src\Inventoryzing.Agent.Scanner.Host\Inventoryzing.Agent.Scanner.Host.csproj", "{58D90CED-B704-415F-BE2F-AAD7FD5230B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventoryzing.Agent.Scanner.Linux", "..\..\linux\inventoryzing-scanner-agent\src\Inventoryzing.Agent.Scanner.Linux\Inventoryzing.Agent.Scanner.Linux.csproj", "{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{58D90CED-B704-415F-BE2F-AAD7FD5230B5}.Release|x64.Build.0 = Release|Any CPU
 		{58D90CED-B704-415F-BE2F-AAD7FD5230B5}.Release|x86.ActiveCfg = Release|Any CPU
 		{58D90CED-B704-415F-BE2F-AAD7FD5230B5}.Release|x86.Build.0 = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|x64.Build.0 = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Debug|x86.Build.0 = Debug|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|x64.ActiveCfg = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|x64.Build.0 = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|x86.ActiveCfg = Release|Any CPU
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{C4CEFBB2-21D1-4E13-94DE-79E0DEC60AFC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{A4ED4FEB-93F0-42C4-A210-44CF0327C56D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{58D90CED-B704-415F-BE2F-AAD7FD5230B5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{9D3DD1A2-6963-48C1-9C4B-31A7B14452CB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
