@@ -1,4 +1,4 @@
-# Zebra's matching Ubuntu 24.04 CoreScanner + development .deb packages are
+# Zebra's matching-architecture Debian CoreScanner + development .deb packages are
 # supplied through the zebra-sdk build context, never downloaded implicitly.
 FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS managed
 WORKDIR /src
