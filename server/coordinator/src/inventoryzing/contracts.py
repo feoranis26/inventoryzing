@@ -12,6 +12,8 @@ from pydantic import (
     model_validator,
 )
 
+from inventoryzing.units import Dimension
+
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
 
 
@@ -126,23 +128,49 @@ class CreatePropertyDefinition(StrictModel):
     expected_version: int | None = Field(default=None, gt=0)
     label: Name
     description: str = Field(default="", max_length=10000)
-    value_type: Literal["text", "integer", "decimal", "boolean", "date", "datetime", "quantity"]
-    quantity_dimension: Literal["count", "volume", "length", "mass", "area"] | None = None
+    value_type: Literal[
+        "text", "integer", "decimal", "boolean", "date", "datetime", "quantity", "quantity_range"
+    ]
+    quantity_dimension: Dimension | None = None
     allowed_units: list[str] = Field(default_factory=list, max_length=32)
 
     @model_validator(mode="after")
     def quantity_schema_is_complete(self):
         if (self.type_id is None) != (self.expected_version is None):
             raise ValueError("Type attachment requires both type ID and expected version.")
-        if self.value_type == "quantity" and (
+        if self.value_type in ("quantity", "quantity_range") and (
             self.quantity_dimension is None or not self.allowed_units
         ):
             raise ValueError("Quantity properties require a dimension and allowed units.")
-        if self.value_type != "quantity" and (
+        if self.value_type not in ("quantity", "quantity_range") and (
             self.quantity_dimension is not None or self.allowed_units
         ):
             raise ValueError("Only quantity properties may define dimensions or units.")
         return self
+
+
+class CreatePropertyGroup(StrictModel):
+    kind: Literal["property.group.create"]
+    name: Name
+    description: str = Field(default="", max_length=10000)
+    property_ids: UniqueIds = Field(default_factory=list, max_length=100)
+
+
+class EditPropertyGroup(StrictModel):
+    kind: Literal["property.group.edit"]
+    group_id: UUID
+    expected_version: int = Field(gt=0)
+    name: Name
+    description: str = Field(default="", max_length=10000)
+    property_ids: UniqueIds = Field(default_factory=list, max_length=100)
+
+
+class SetTypePropertyGroup(StrictModel):
+    kind: Literal["type.property.group.set"]
+    type_id: UUID
+    expected_version: int = Field(gt=0)
+    group_id: UUID
+    applicable: bool
 
 
 class SetTypePropertyDeclaration(StrictModel):
@@ -180,7 +208,7 @@ class EditPropertyDefinition(StrictModel):
 class DeleteDefinition(StrictModel):
     kind: Literal["definition.delete"]
     entity_id: UUID
-    entity_kind: Literal["tag", "object_type", "property_definition"]
+    entity_kind: Literal["tag", "object_type", "property_definition", "property_group"]
     expected_version: int = Field(gt=0)
 
 
@@ -288,6 +316,9 @@ Payload = Annotated[
     | CreateType
     | EditType
     | CreatePropertyDefinition
+    | CreatePropertyGroup
+    | EditPropertyGroup
+    | SetTypePropertyGroup
     | SetTypePropertyDeclaration
     | SetPropertyValue
     | EditPropertyDefinition

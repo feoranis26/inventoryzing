@@ -45,7 +45,8 @@ def main() -> None:
                     iz.tags, iz.property_definitions TO inventoryzing_app;
                 GRANT INSERT, DELETE ON iz.tag_edges, iz.entity_tags TO inventoryzing_app;
                 GRANT INSERT, UPDATE, DELETE ON iz.type_property_declarations,
-                    iz.property_values TO inventoryzing_app;
+                    iz.property_values, iz.property_groups, iz.property_group_members,
+                    iz.type_property_groups TO inventoryzing_app;
                 GRANT INSERT, UPDATE ON iz.stock_policies TO inventoryzing_app;
                 GRANT INSERT, UPDATE, DELETE ON iz.stock_holdings TO inventoryzing_app;
                 GRANT INSERT, DELETE ON iz.stock_movements TO inventoryzing_app;

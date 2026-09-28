@@ -8,6 +8,8 @@ public sealed class PrinterAgentOptions
     public Uri? CoordinatorUri { get; set; }
     public string CredentialFile { get; set; } = string.Empty;
     public string PrinterId { get; set; } = "brother:ql-820nwb";
+    public string Transport { get; set; } = "tcp";
+    public string UsbSerialNumber { get; set; } = string.Empty;
     public string RasterHost { get; set; } = string.Empty;
     public int RasterPort { get; set; }
     public int StatusPort { get; set; } = 161;

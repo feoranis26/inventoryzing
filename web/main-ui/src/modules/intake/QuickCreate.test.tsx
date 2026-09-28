@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { QuickCreate } from './QuickCreate'
 import { api, sendCommand } from '../../api'
 import type { Session } from '../../api'
+import { StrictMode } from 'react'
+import userEvent from '@testing-library/user-event'
 
 vi.mock('../../api', () => ({ api: vi.fn(), sendCommand: vi.fn(), makeCommand: (_session: unknown, payload: unknown) => payload }))
 const session = { csrf_token: 'test', permissions: ['inventory.create', 'label.print'] } as Session
@@ -23,10 +25,39 @@ beforeEach(() => {
   vi.mocked(sendCommand).mockResolvedValue({ entity_id: 'created-object' } as never)
 })
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals() })
-function show() {
+function show(strict = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  render(<MantineProvider><QueryClientProvider client={client}><QuickCreate session={session} /></QueryClientProvider></MantineProvider>)
+  const content = <MantineProvider><QueryClientProvider client={client}><QuickCreate session={session} /></QueryClientProvider></MantineProvider>
+  render(strict ? <StrictMode>{content}</StrictMode> : content)
 }
+
+test('property editing survives repeated typing and persists text, integer, quantity and boolean overrides', async () => {
+  const prefix = 'inventoryzing.intake.v1.undefined.undefined.'
+  localStorage.setItem(`${prefix}type`, JSON.stringify('typed'))
+  const original = vi.mocked(api).getMockImplementation()!
+  vi.mocked(api).mockImplementation(async (path, options) => {
+    if (path === '/types') return [{ id: 'typed', name: 'Test type' }] as never
+    if (path === '/types/typed/stock-policy') throw new Error('No stock policy')
+    if (path === '/types/typed/properties') return [
+      { id: 'text', label: 'Notes', type: 'text', editable: true },
+      { id: 'integer', label: 'Count', type: 'integer', editable: true },
+      { id: 'quantity', label: 'Weight', type: 'quantity', editable: true, allowed_units: ['kg'], canonical_unit: 'kg' },
+      { id: 'boolean', label: 'Checked', type: 'boolean', editable: true },
+    ] as never
+    return original(path, options)
+  })
+  const user = userEvent.setup()
+  show(true)
+  const notes = await screen.findByLabelText('Notes')
+  await user.type(notes, 'Workshop item with longer notes')
+  expect(document.activeElement).toBe(notes)
+  await user.type(screen.getByLabelText('Count'), '42')
+  await user.type(screen.getByLabelText('Weight'), '12.5')
+  await user.click(screen.getByLabelText('Checked'))
+  await waitFor(() => expect(JSON.parse(localStorage.getItem(`${prefix}values`)!)).toEqual({
+    text: 'Workshop item with longer notes', integer: 42, quantity: { amount: '12.5' }, boolean: true,
+  }))
+})
 test('no-label creation retains inputs and updates the preview without submitting a print', async () => {
   show()
   fireEvent.change(screen.getByLabelText('Name', { exact: false }), { target: { value: 'Meter' } })

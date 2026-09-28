@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     secure_cookies: bool = True
     allowed_hosts: list[str] = ["localhost", "127.0.0.1", "testserver"]
     public_origin: str = "http://localhost:8088"
+    additional_origins: list[str] = []
     static_dir: Path | None = None
     session_hours: int = 12
     enabled_modules: tuple[str, ...] = ("labeling", "scanning")

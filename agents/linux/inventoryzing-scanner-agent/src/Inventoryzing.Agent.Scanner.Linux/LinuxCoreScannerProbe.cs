@@ -285,7 +285,7 @@ public sealed class LinuxCoreScannerProbe : IScannerProbe
         {
             switch (message.Type)
             {
-                case "barcode" when message.EventType == 1:
+                case "barcode":
                 {
                     var frame = ZebraCoreScannerXml.ParseBarcode(message.Xml);
                     Remember(frame.Source);
@@ -295,6 +295,10 @@ public sealed class LinuxCoreScannerProbe : IScannerProbe
                         frame.Source,
                         timeProvider.GetUtcNow(),
                         frame.Symbology));
+
+                    logger.LogInformation(
+                        "Received barcode event from CoreScanner (event type {EventType}).",
+                        message.EventType);
                     break;
                 }
                 case "pnp":

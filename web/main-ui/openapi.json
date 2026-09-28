@@ -1360,6 +1360,132 @@
         }
       }
     },
+    "/api/properties/{property_id}/matches": {
+      "get": {
+        "summary": "Quantity Matches",
+        "description": "Find effective scalar/range quantities containing an amount in a compatible unit.",
+        "operationId": "quantity_matches_api_properties__property_id__matches_get",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Property Id"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Amount"
+            }
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Unit"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuantityMatch"
+                  },
+                  "title": "Response Quantity Matches Api Properties  Property Id  Matches Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/property-groups": {
+      "get": {
+        "summary": "List Property Groups",
+        "operationId": "list_property_groups_api_property_groups_get",
+        "parameters": [
+          {
+            "name": "type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyGroup"
+                  },
+                  "title": "Response List Property Groups Api Property Groups Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/label-placeholders": {
       "get": {
         "summary": "List Label Placeholders",
@@ -2490,6 +2616,15 @@
                 "$ref": "#/components/schemas/CreatePropertyDefinition"
               },
               {
+                "$ref": "#/components/schemas/CreatePropertyGroup"
+              },
+              {
+                "$ref": "#/components/schemas/EditPropertyGroup"
+              },
+              {
+                "$ref": "#/components/schemas/SetTypePropertyGroup"
+              },
+              {
                 "$ref": "#/components/schemas/SetTypePropertyDeclaration"
               },
               {
@@ -2544,6 +2679,8 @@
                 "object.type.set": "#/components/schemas/SetObjectType",
                 "property.definition.create": "#/components/schemas/CreatePropertyDefinition",
                 "property.definition.edit": "#/components/schemas/EditPropertyDefinition",
+                "property.group.create": "#/components/schemas/CreatePropertyGroup",
+                "property.group.edit": "#/components/schemas/EditPropertyGroup",
                 "property.unit.set": "#/components/schemas/ConvertPropertyUnit",
                 "property.value.set": "#/components/schemas/SetPropertyValue",
                 "stock.adjust": "#/components/schemas/ChangeStock",
@@ -2559,7 +2696,8 @@
                 "tags.set": "#/components/schemas/SetEntityTags",
                 "type.create": "#/components/schemas/CreateType",
                 "type.edit": "#/components/schemas/EditType",
-                "type.property.declare": "#/components/schemas/SetTypePropertyDeclaration"
+                "type.property.declare": "#/components/schemas/SetTypePropertyDeclaration",
+                "type.property.group.set": "#/components/schemas/SetTypePropertyGroup"
               }
             }
           }
@@ -3001,7 +3139,8 @@
               "boolean",
               "date",
               "datetime",
-              "quantity"
+              "quantity",
+              "quantity_range"
             ],
             "title": "Value Type"
           },
@@ -3014,7 +3153,16 @@
                   "volume",
                   "length",
                   "mass",
-                  "area"
+                  "area",
+                  "voltage",
+                  "current",
+                  "resistance",
+                  "power",
+                  "energy",
+                  "capacitance",
+                  "inductance",
+                  "frequency",
+                  "charge"
                 ]
               },
               {
@@ -3040,6 +3188,43 @@
           "value_type"
         ],
         "title": "CreatePropertyDefinition"
+      },
+      "CreatePropertyGroup": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.group.create",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "property_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Property Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "CreatePropertyGroup"
       },
       "CreateRole": {
         "properties": {
@@ -3306,7 +3491,8 @@
             "enum": [
               "tag",
               "object_type",
-              "property_definition"
+              "property_definition",
+              "property_group"
             ],
             "title": "Entity Kind"
           },
@@ -3405,6 +3591,55 @@
           "label"
         ],
         "title": "EditPropertyDefinition"
+      },
+      "EditPropertyGroup": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "property.group.edit",
+            "title": "Kind"
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Group Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "property_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Property Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "group_id",
+          "expected_version",
+          "name"
+        ],
+        "title": "EditPropertyGroup"
       },
       "EditTag": {
         "properties": {
@@ -4472,7 +4707,8 @@
               "integer",
               "decimal",
               "boolean",
-              "quantity"
+              "quantity",
+              "quantity_range"
             ],
             "title": "Type",
             "default": "text"
@@ -4551,6 +4787,72 @@
         ],
         "title": "PropertyDefinition"
       },
+      "PropertyGroup": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "property_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Property Ids"
+          },
+          "source_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type Id"
+          },
+          "source_type_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type Name"
+          },
+          "assigned_directly": {
+            "type": "boolean",
+            "title": "Assigned Directly",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "version",
+          "property_ids"
+        ],
+        "title": "PropertyGroup"
+      },
       "PropertyValue": {
         "properties": {
           "id": {
@@ -4583,7 +4885,8 @@
               "integer",
               "decimal",
               "boolean",
-              "quantity"
+              "quantity",
+              "quantity_range"
             ],
             "title": "Type",
             "default": "text"
@@ -4793,6 +5096,25 @@
           "provider"
         ],
         "title": "PropertyValue"
+      },
+      "QuantityMatch": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "QuantityMatch"
       },
       "ResetAccountPassword": {
         "properties": {
@@ -5478,6 +5800,44 @@
         ],
         "title": "SetTypePropertyDeclaration"
       },
+      "SetTypePropertyGroup": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "type.property.group.set",
+            "title": "Kind"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Version"
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Group Id"
+          },
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "type_id",
+          "expected_version",
+          "group_id",
+          "applicable"
+        ],
+        "title": "SetTypePropertyGroup"
+      },
       "SiteSettingsView": {
         "properties": {
           "id": {
@@ -5951,7 +6311,16 @@
               "volume",
               "length",
               "mass",
-              "area"
+              "area",
+              "voltage",
+              "current",
+              "resistance",
+              "power",
+              "energy",
+              "capacitance",
+              "inductance",
+              "frequency",
+              "charge"
             ],
             "title": "Id"
           },

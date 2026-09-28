@@ -59,11 +59,12 @@ Back up before updating, then rebuild and start with `docker compose up --build 
 
 Set up and verify [database backups and restores](docs/operations/backup-restore.md) before relying on the installation. Backup scheduling, retention, and failure notifications need to be configured separately.
 
-The supplied Compose setup can serve the coordinator on the local network. For a kiosk using Tailscale, set `IZ_BIND_ADDRESS` to the coordinator computer's Tailnet IP, set `IZ_PUBLIC_ORIGIN` to the same `http://<tailnet-ip>:8088` address, and include that IP in `IZ_ALLOWED_HOSTS`. For example:
+The supplied Compose setup listens on all interfaces for localhost and local network access, so a changed LAN address does not prevent startup. Authentication is required. For a kiosk using Tailscale, set `IZ_PUBLIC_ORIGIN` to the coordinator's `http://<tailnet-ip>:8088` address and include that IP in `IZ_ALLOWED_HOSTS`. For example:
 
 ```dotenv
-IZ_BIND_ADDRESS=100.x.y.z
+IZ_BIND_ADDRESS=0.0.0.0
 IZ_PUBLIC_ORIGIN=http://100.x.y.z:8088
+IZ_ADDITIONAL_ORIGINS=["http://localhost:8088","http://127.0.0.1:8088"]
 IZ_ALLOWED_HOSTS=["100.x.y.z","localhost","127.0.0.1"]
 ```
 

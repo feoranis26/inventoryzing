@@ -35,7 +35,7 @@ class StrictModel(BaseModel):
 
 
 class CreateScanSession(StrictModel):
-    mode: Literal["lookup", "move"]
+    mode: Literal["lookup", "move", "verify_contents"]
     destination_id: UUID | None = None
     controller_id: UUID
     take_over: bool = False
@@ -71,11 +71,13 @@ class ScanResult(BaseModel):
 class ScanSessionView(BaseModel):
     id: UUID
     terminal_id: UUID
-    mode: Literal["lookup", "move"]
+    mode: Literal["lookup", "move", "verify_contents"]
     destination_id: UUID | None
     destination_name: str | None
     expires_at: datetime
     results: list[ScanResult] = Field(default_factory=list)
+    expected_items: list[dict[str, str]] = Field(default_factory=list)
+    seen_ids: list[UUID] = Field(default_factory=list)
 
 
 class ScannerTerminalView(BaseModel):
@@ -97,10 +99,12 @@ class LiveSession:
     account_id: UUID
     site_id: UUID
     command_epoch: int
-    mode: Literal["lookup", "move"]
+    mode: Literal["lookup", "move", "verify_contents"]
     destination_id: UUID | None
     destination_name: str | None
     expires_at: datetime
+    expected_items: dict[UUID, str] = field(default_factory=dict)
+    seen_ids: set[UUID] = field(default_factory=set)
     sequence: int = 0
     results: deque[ScanResult] = field(default_factory=lambda: deque(maxlen=MAX_RESULTS))
 
@@ -125,6 +129,7 @@ class LiveScannerHub:
         terminal_id: UUID,
         request: CreateScanSession,
         destination_name: str | None,
+        expected_items: dict[UUID, str] | None = None,
     ) -> LiveSession:
         now = datetime.now(UTC)
         with self.lock:
@@ -146,6 +151,7 @@ class LiveScannerHub:
                 request.destination_id,
                 destination_name,
                 now + SESSION_TTL,
+                expected_items or {},
             )
             self.active[terminal_id] = session
             return session
@@ -268,6 +274,8 @@ def session_view(session: LiveSession, after: int = 0) -> ScanSessionView:
         destination_name=session.destination_name,
         expires_at=session.expires_at,
         results=[result for result in session.results if result.sequence > after],
+        expected_items=[{"id": str(item_id), "name": name} for item_id, name in session.expected_items.items()],
+        seen_ids=list(session.seen_ids),
     )
 
 
@@ -281,7 +289,7 @@ def create_session(payload: CreateScanSession, request: Request, response: Respo
     permission = "inventory.move" if payload.mode == "move" else "inventory.read"
     identity = authenticate(request, permission)
     terminal = terminal_for_browser(request, response, identity)
-    if payload.mode == "move" and payload.destination_id is None:
+    if payload.mode in {"move", "verify_contents"} and payload.destination_id is None:
         raise HTTPException(422, "Move workflows require a destination.")
     if payload.mode == "lookup" and payload.destination_id is not None:
         raise HTTPException(422, "Lookup workflows do not use a destination.")
@@ -298,8 +306,20 @@ def create_session(payload: CreateScanSession, request: Request, response: Respo
             )
         if destination_name is None:
             raise HTTPException(404, "The destination object is not available.")
+    expected_items: dict[UUID, str] = {}
+    if payload.mode == "verify_contents":
+        with request.app.state.engine.connect() as connection:
+            rows = connection.execute(text("""
+                SELECT child.id, child.name
+                FROM iz.placements placement
+                JOIN iz.objects child ON child.id=placement.object_id
+                JOIN iz.entities entity ON entity.id=child.id
+                WHERE placement.parent_id=:parent AND entity.archived_at IS NULL
+                ORDER BY child.name
+            """), {"parent": payload.destination_id}).mappings()
+            expected_items = {row["id"]: row["name"] for row in rows}
     return session_view(
-        request.app.state.scanner_hub.start(identity, terminal.id, payload, destination_name)
+        request.app.state.scanner_hub.start(identity, terminal.id, payload, destination_name, expected_items)
     )
 
 
@@ -362,6 +382,15 @@ def process_scan(request: Request, active: LiveSession, scan: ScanObservation) -
         object_id, object_name = item["id"], item["name"]
         if active.mode == "lookup":
             message = f"Found {object_name}."
+        elif active.mode == "verify_contents":
+            if object_id in active.expected_items:
+                if object_id in active.seen_ids:
+                    outcome, message = "no_action", f"{object_name} was already scanned."
+                else:
+                    active.seen_ids.add(object_id)
+                    message = f"Verified {object_name}."
+            else:
+                outcome, message = "failure", f"{object_name} is not directly in {active.destination_name}."
         elif object_id == active.destination_id:
             outcome, message = "failure", "The destination cannot be moved into itself."
         elif item["parent_id"] == active.destination_id:

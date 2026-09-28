@@ -1,7 +1,7 @@
 import { ObjectProperties, PropertiesPage, PropertyDefinitionEditor, PropertyDefinitionForm, PropertyValueForm,
   TypePropertiesEditor } from './Properties'
 import type { PropertyDefinition, PropertyValue } from './Properties'
-import { useDeferredValue, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   ActionIcon, Alert, Badge, Breadcrumbs, Button, Checkbox, Group, Loader, Menu, Modal,
@@ -22,6 +22,7 @@ import type { Command, EntityTags, HistoryEntry, InventoryObject, ObjectPage, Ob
 import { LabelPanel } from './modules/labeling/LabelPanel'
 import { LabelEditor } from './modules/labeling/LabelEditor'
 import { ScannerWorkflow } from './modules/scanning/ScannerWorkflows'
+import type { ScannerObjectScan } from './modules/scanning/ScannerWorkflows'
 import type { ScannerStatus } from './modules/scanning/ScannerWorkflows'
 import { QuickCreate } from './modules/intake/QuickCreate'
 import { StockHoldingControls, StockPolicyForm } from './modules/stock/StockControls'
@@ -106,6 +107,7 @@ function Workspace({ session }: { session: Session }) {
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [scannerStatus, setScannerStatus] = useState<ScannerStatus>({ ready: false })
+  const [scannerSelection, setScannerSelection] = useState<ScannerObjectScan | null>(null)
   const storageKey = `inventoryzing.pending.${session.site_id}.${session.account_id}`
   const [pending, setPending] = useState<Command | null>(() => {
     try { return JSON.parse(sessionStorage.getItem(storageKey) ?? 'null') } catch { return null }
@@ -117,6 +119,8 @@ function Workspace({ session }: { session: Session }) {
   const subtreeId = /^\/tree\/([^/]+)$/.exec(location)?.[1]
   const tagFilterId = /^\/tag\/([^/]+)$/.exec(location)?.[1]
   const scanMoveDestinationId = /^\/scanner\/move\/([^/]+)$/.exec(location)?.[1]
+  const scanVerifyDestinationId = /^\/scanner\/verify\/([^/]+)$/.exec(location)?.[1]
+  const onSelectorScan = useCallback((scan: ScannerObjectScan) => setScannerSelection(scan), [])
   const can = (permission: string) => session.permissions.includes(permission)
 
   useEffect(() => {
@@ -174,6 +178,7 @@ function Workspace({ session }: { session: Session }) {
       setPending(null)
       setDialog(null)
       await cache.invalidateQueries({ queryKey: ['inventory'] })
+      await cache.invalidateQueries({ queryKey: ['property-groups'] })
       if (command.payload.kind === 'property.definition.create' ||
           command.payload.kind === 'property.definition.edit' ||
           command.payload.kind === 'definition.delete') {
@@ -186,9 +191,9 @@ function Workspace({ session }: { session: Session }) {
         navigate('/types')
       } else if (command.payload.kind === 'property.definition.create') {
         navigate(command.payload.type_id ? '/types' : '/properties')
-      } else if (command.payload.kind === 'property.definition.edit') {
+      } else if (command.payload.kind === 'property.definition.edit' || command.payload.kind === 'property.group.create' || command.payload.kind === 'property.group.edit' || (command.payload.kind === 'definition.delete' && ['property_group', 'property_definition'].includes(command.payload.entity_kind))) {
         navigate('/properties')
-      } else if (command.payload.kind === 'type.property.declare' ||
+      } else if (command.payload.kind === 'type.property.declare' || command.payload.kind === 'type.property.group.set' ||
                  (command.payload.kind === 'property.value.set' && command.payload.target_kind === 'object_type')) {
         navigate('/types')
       } else if (command.payload.kind === 'tag.create' || command.payload.kind === 'tag.edit' ||
@@ -202,7 +207,7 @@ function Workspace({ session }: { session: Session }) {
         navigate(`/objects/${result.entity_id}`)
       }
       const editedTypeId = command.payload.kind === 'property.definition.create'
-        || command.payload.kind === 'type.property.declare' ? command.payload.type_id
+        || command.payload.kind === 'type.property.declare' || command.payload.kind === 'type.property.group.set' ? command.payload.type_id
         : command.payload.kind === 'property.value.set' && command.payload.target_kind === 'object_type'
           ? command.payload.target_id : undefined
       if (editedTypeId) {
@@ -256,7 +261,7 @@ function Workspace({ session }: { session: Session }) {
         <Link href="/tags" className={location === '/tags' ? 'nav-link active' : 'nav-link'}><Tags size={19} />Tags</Link>
         {can('label.print') && <Link href="/labels" className={location === '/labels' ? 'nav-link active' : 'nav-link'}><Pencil size={19} />Labels</Link>}
         <Link href="/properties" className={location === '/properties' ? 'nav-link active' : 'nav-link'}><Layers size={19} />Properties</Link>
-        <Link href="/scanner" className={location === '/scanner' || !!scanMoveDestinationId ? 'nav-link active' : 'nav-link'}><ScanLine size={19} />Scanner</Link>
+        <Link href="/scanner" className={location === '/scanner' || !!scanMoveDestinationId || !!scanVerifyDestinationId ? 'nav-link active' : 'nav-link'}><ScanLine size={19} />Scanner</Link>
         {can('inventory.create') && <Link href="/intake" className={location === '/intake' ? 'nav-link active' : 'nav-link'}><Plus size={19} />Quick create</Link>}
         {can('system.config.view') && <Link href="/settings" className={location === '/settings' ? 'nav-link active' : 'nav-link'}><Settings size={19} />Site settings</Link>}
         {(can('role.manage') || can('user.manage')) && <Link href="/access" className={location === '/access' ? 'nav-link active' : 'nav-link'}><Settings size={19} />Accounts and roles</Link>}
@@ -266,10 +271,12 @@ function Workspace({ session }: { session: Session }) {
     </aside>
     <main className="main-content">
       <Scanner navigate={navigate} />
-      <ScannerWorkflow destinationId={scanMoveDestinationId} csrfToken={session.csrf_token}
+      <ScannerWorkflow destinationId={scanMoveDestinationId ?? scanVerifyDestinationId} csrfToken={session.csrf_token}
         onStatus={setScannerStatus}
         lookupTarget={location === '/intake/select' ? 'intake' : 'object'}
-        visible={location === '/scanner' || !!scanMoveDestinationId} />
+        mode={scanVerifyDestinationId ? 'verify_contents' : undefined}
+        onObjectScan={(dialog && (dialog.kind === 'create' || dialog.kind === 'move')) || location === '/intake' || location.startsWith('/intake/copy/') ? onSelectorScan : undefined}
+        visible={location === '/scanner' || !!scanMoveDestinationId || !!scanVerifyDestinationId} />
       {pending && <Alert mb="lg" color="yellow" title={busy ? 'Saving command' : 'Command outcome not confirmed'} role="status">
         <Group justify="space-between" gap="sm"><Text size="sm" className="mono command-id">{pending.command_id}</Text>
           {!busy && <Group gap="xs"><Button size="xs" variant="light" color="yellow" onClick={() => void deliver(pending)} leftSection={<RefreshCw size={14} />}>Retry original command</Button>
@@ -277,12 +284,13 @@ function Workspace({ session }: { session: Session }) {
         </Group>
       </Alert>}
       {error != null && !dialog && <div className="error-block"><Failure error={error} /></div>}
-      {location === '/scanner' || scanMoveDestinationId ? null
-      : location === '/intake' || location.startsWith('/intake/') ? <QuickCreate session={session} scannerStatus={scannerStatus} />
+      {location === '/scanner' || scanMoveDestinationId || scanVerifyDestinationId ? null
+      : location === '/intake' || location.startsWith('/intake/') ? <QuickCreate session={session} scannerStatus={scannerStatus}
+        scannerSelection={scannerSelection} consumeScannerSelection={() => setScannerSelection(null)} />
       : location === '/settings' ? <SiteSettingsPage session={session} />
       : location === '/access' ? <AccessAdministration session={session} />
       : location === '/principals' ? <PrincipalsAdministration session={session} />
-      : location === '/properties' ? <PropertiesPage create={() => setDialog({ kind: 'property-definition' })}
+      : location === '/properties' ? <PropertiesPage submit={submit} create={() => setDialog({ kind: 'property-definition' })}
         edit={field => setDialog({ kind: 'property-edit', field })}
         remove={field => setDialog({ kind: 'definition-delete', entityId: field.id!,
           entityKind: 'property_definition', name: field.label, version: field.version })}
@@ -369,7 +377,8 @@ function Workspace({ session }: { session: Session }) {
             ? <PropertyValueForm field={dialog.field} targetId={dialog.targetId}
               targetKind={dialog.targetKind} targetVersion={dialog.targetVersion}
               busy={busy} disabled={!!pending} submit={submit} />
-          : <ObjectForm key={dialog.kind} dialog={dialog} busy={busy} disabled={!!pending} submit={submit} />)}
+          : <ObjectForm key={dialog.kind} dialog={dialog} busy={busy} disabled={!!pending} submit={submit}
+            scannerSelection={scannerSelection} consumeScannerSelection={() => setScannerSelection(null)} />)}
     </Modal>
   </div>
 }
@@ -658,13 +667,19 @@ function DeleteDefinitionForm({ dialog, busy, disabled, submit }: {
   </Stack>
 }
 
-function ObjectPicker({ value, onChange, exclude, label = 'Parent object' }: {
+function ObjectPicker({ value, onChange, exclude, label = 'Parent object', scannerSelection, consumeScannerSelection }: {
   value: string | null, onChange: (value: string | null) => void, exclude?: string, label?: string,
+  scannerSelection?: ScannerObjectScan | null, consumeScannerSelection?: () => void,
 }) {
   const [search, setSearch] = useState('')
   const deferred = useDeferredValue(search)
   const query = useQuery({ queryKey: ['inventory', 'picker', deferred], queryFn: () => api<ObjectPage>(`/objects?query=${encodeURIComponent(deferred)}`) })
   const selected = useQuery({ queryKey: ['inventory', 'object', value], queryFn: () => api<InventoryObject>(`/objects/${value}`), enabled: !!value })
+  useEffect(() => {
+    if (!scannerSelection || scannerSelection.outcome !== 'success' || scannerSelection.objectId === exclude) return
+    onChange(scannerSelection.objectId)
+    consumeScannerSelection?.()
+  }, [consumeScannerSelection, exclude, onChange, scannerSelection])
   const objects = new Map((query.data?.items ?? []).map(object => [object.id, object]))
   if (selected.data) objects.set(selected.data.id, selected.data)
   return <Select label={label} placeholder="Site root" searchable clearable value={value} onChange={onChange}
@@ -743,8 +758,9 @@ function TagAssignmentEditor({ target, initial, busy, disabled, submit }: {
   </Stack></fieldset></form>
 }
 
-function ObjectForm({ dialog, busy, disabled, submit }: {
+function ObjectForm({ dialog, busy, disabled, submit, scannerSelection, consumeScannerSelection }: {
   dialog: ObjectDialog, busy: boolean, disabled: boolean, submit: (payload: Payload, epoch?: number) => void,
+  scannerSelection?: ScannerObjectScan | null, consumeScannerSelection?: () => void,
 }) {
   const object = 'object' in dialog ? dialog.object : null
   const editedType = dialog.kind === 'type' ? dialog.type ?? dialog.copy : undefined
@@ -799,7 +815,7 @@ function ObjectForm({ dialog, busy, disabled, submit }: {
   }
   return <form onSubmit={save}><fieldset disabled={disabled} className="form-fieldset"><Stack>
     {copying && <Alert color="blue">Creating an independent copy with its own ID. Direct tags and saved property values/defaults are copied; inherited values follow the selected type or parent type. Contents and history are not copied.</Alert>}
-    {dialog.kind === 'move' ? <><Text fw={500}>{object?.name}</Text><ObjectPicker value={parent} onChange={setParent} exclude={object?.id} label="Destination" />
+    {dialog.kind === 'move' ? <><Text fw={500}>{object?.name}</Text><ObjectPicker value={parent} onChange={setParent} exclude={object?.id} label="Destination" scannerSelection={scannerSelection} consumeScannerSelection={consumeScannerSelection} />
       <Select label="Placement" value={relation} onChange={value => setRelation(value ?? 'contained_in')}
         data={[{ value: 'contained_in', label: 'Contained in' }, { value: 'located_in', label: 'Located in' }, { value: 'installed_in', label: 'Installed in' }, { value: 'mounted_in', label: 'Mounted in' }]} /></>
       : dialog.kind === 'object-type' ? <><Text fw={500}>{object?.name}</Text>
@@ -810,7 +826,7 @@ function ObjectForm({ dialog, busy, disabled, submit }: {
         <Textarea label="Description" value={description} onChange={event => setDescription(event.currentTarget.value)} maxLength={10000} minRows={3} autosize /></>}
     {dialog.kind === 'create' && <><Select<string> label="Object type" placeholder="Unspecified" value={objectType} onChange={setObjectType} clearable searchable
       data={(types.data ?? []).filter(type => !type.abstract).map(type => ({ value: type.id, label: type.name }))} error={types.error ? errorText(types.error) : undefined} />
-      <ObjectPicker value={parent} onChange={setParent} />
+      <ObjectPicker value={parent} onChange={setParent} scannerSelection={scannerSelection} consumeScannerSelection={consumeScannerSelection} />
       <Select label="Initial placement" value={relation} onChange={value => setRelation(value ?? 'contained_in')}
         data={[{ value: 'contained_in', label: 'Contained in' }, { value: 'located_in', label: 'Located in' }, { value: 'installed_in', label: 'Installed in' }, { value: 'mounted_in', label: 'Mounted in' }]} />
       <TagPicker value={tagIds} onChange={setTagIds} />
@@ -857,6 +873,8 @@ function ObjectDetail({ id, siteName, csrfToken, can, disabled, edit, duplicate,
     <div className="page-title detail-title"><div><Text className="eyebrow mono">{object.alias ?? 'UNLABELED'}</Text><Title order={1}>{object.name}</Title>
       <Group gap="xs" mt={7}><Badge variant="light" color="gray">{object.stock ? 'Stock holding' : 'Asset'}</Badge><Text size="sm" c="dimmed">{object.type_name ?? 'Unspecified type'}</Text></Group></div>
       <Group gap="xs"><SubtreeLink object={object} />
+        <Button component={Link} href={`/scanner/verify/${object.id}`} variant="light"
+          leftSection={<ScanLine size={17} />} disabled={disabled || !can('inventory.read')}>Verify contents</Button>
         <Button component={Link} href={`/intake/copy/${object.id}`} variant="light"
           disabled={disabled || !can('inventory.create')}>Copy to bulk add</Button>
         <Button variant="light" disabled={disabled || !can('inventory.create')} onClick={() => duplicate(object)}>Duplicate</Button>

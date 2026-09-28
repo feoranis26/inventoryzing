@@ -1,3 +1,5 @@
+import { QuantityRangeInput } from '../../QuantityRangeInput'
+import { quantityRangeInput } from '../../quantityRange'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Divider, Group, Modal, MultiSelect, Select, Stack, Text,
   Textarea, TextInput, Title } from '@mantine/core'
@@ -11,7 +13,7 @@ import { useIntakeState } from './useIntakeState'
 import { useLocation } from 'wouter'
 import { loadIntakeCopy } from './copyObject'
 import { IntakeSourcePicker } from './IntakeSourcePicker'
-import type { ScannerStatus } from '../scanning/ScannerWorkflows'
+import type { ScannerObjectScan, ScannerStatus } from '../scanning/ScannerWorkflows'
 
 type IntakeEntry = { id: string, name: string, templateId?: string, requestId?: string, print: 'not-requested' | 'queued' | 'printed' | 'failed', detail?: string }
 type Creator = 'tag' | 'type' | 'property' | null
@@ -23,7 +25,10 @@ const placementOptions = [
   { value: 'installed_in', label: 'Installed in' }, { value: 'mounted_in', label: 'Mounted in' },
 ]
 
-export function QuickCreate({ session, scannerStatus }: { session: Session, scannerStatus?: ScannerStatus }) {
+export function QuickCreate({ session, scannerStatus, scannerSelection, consumeScannerSelection }: {
+  session: Session, scannerStatus?: ScannerStatus, scannerSelection?: ScannerObjectScan | null,
+  consumeScannerSelection?: () => void,
+}) {
   const cache = useQueryClient()
   const [location, navigate] = useLocation()
   const copyId = /^\/intake\/copy\/([^/]+)$/.exec(location)?.[1]
@@ -45,6 +50,11 @@ export function QuickCreate({ session, scannerStatus }: { session: Session, scan
   const [printRequestId, setPrintRequestId] = useState<string>(() => entries.find(entry => entry.print === 'queued')?.requestId)
   const [error, setError] = useState<unknown>()
   const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!scannerSelection || scannerSelection.outcome !== 'success') return
+    setParentId(scannerSelection.objectId)
+    consumeScannerSelection?.()
+  }, [consumeScannerSelection, scannerSelection, setParentId])
   const submitting = useRef(false)
   const printing = useRef(entries.some(entry => entry.print === 'queued' && entry.requestId))
   useEffect(() => {
@@ -226,17 +236,23 @@ function PropertyOverrides({ fields, values, setValues }: { fields: PropertyValu
     if (values[id] === null) return <Group key={id}><Text size="sm">{field.label}: explicitly unset</Text>
       <Button size="xs" variant="subtle" onClick={() => setValues(current => { const next = { ...current }; delete next[id]; return next })}>Use inherited value</Button></Group>
     if (field.type === 'boolean') return <Checkbox key={id} label={field.label} checked={values[id] === true}
-      onChange={event => setValues(current => ({ ...current, [id]: event.currentTarget.checked }))} />
+      onChange={event => { const checked = event.currentTarget.checked; setValues(current => ({ ...current, [id]: checked })) }} />
+    if (field.type === 'quantity_range') {
+      return <QuantityRangeInput key={id} label={field.label} optional
+        value={values[id] === undefined ? undefined : quantityRangeInput(values[id], field.canonical_unit ?? '')}
+        units={field.allowed_units.map(unit => ({ value: unit, label: unit }))}
+        onChange={value => setValues(old => { const next = { ...old }; if (value) next[id] = value; else delete next[id]; return next })} />
+    }
     if (field.type === 'quantity') {
       const current = (values[id] as { amount?: string, unit?: string } | undefined) ?? {}
       return <Group key={id} grow><TextInput label={field.label} value={current.amount ?? ''} inputMode="decimal"
-        onChange={event => setValues(old => ({ ...old, [id]: { ...current, amount: event.currentTarget.value } }))} />
+        onChange={event => { const amount = event.currentTarget.value; setValues(old => ({ ...old, [id]: { ...current, amount } })) }} />
         <Select label="Unit" value={current.unit ?? field.canonical_unit ?? null} onChange={unit => setValues(old => ({ ...old, [id]: { ...current, unit } }))}
           data={field.allowed_units.map(unit => ({ value: unit, label: unit }))} /></Group>
     }
     const type = field.type === 'integer' || field.type === 'decimal' ? 'number' : field.type === 'date' ? 'date' : 'text'
     return <TextInput key={id} label={field.label} type={type} value={String(values[id] ?? '')}
-      onChange={event => setValues(current => ({ ...current, [id]: field.type === 'integer' ? Number(event.currentTarget.value) : event.currentTarget.value }))} />
+      onChange={event => { const value = event.currentTarget.value; setValues(current => ({ ...current, [id]: field.type === 'integer' ? Number(value) : value })) }} />
   })}</>
 }
 
@@ -258,8 +274,8 @@ function CreatorDialog({ kind, close, session, refresh }: { kind: Creator, close
       const payload = kind === 'tag' ? { kind: 'tag.create', name, description, parent_ids: parentIds }
         : kind === 'type' ? { kind: 'type.create', name, description, parent_type_id: parentType, abstract, tag_ids: tagIds }
           : { kind: 'property.definition.create', key: key.trim() || null, label: name, description,
-            value_type: valueType, quantity_dimension: valueType === 'quantity' ? dimension : null,
-            allowed_units: valueType === 'quantity' ? allowedUnits : [] }
+            value_type: valueType, quantity_dimension: (valueType === 'quantity' || valueType === 'quantity_range') ? dimension : null,
+            allowed_units: (valueType === 'quantity' || valueType === 'quantity_range') ? allowedUnits : [] }
       await sendCommand(session, makeCommand(session, payload as never)); refresh()
       setAdded(`Added ${kind}: ${name}`)
     } catch (failure) { setError(failure) } finally { setBusy(false) }
@@ -273,8 +289,8 @@ function CreatorDialog({ kind, close, session, refresh }: { kind: Creator, close
       data={(types.data ?? []).map(type => ({ value: type.id, label: type.name }))} /><MultiSelect label="Direct tags" value={tagIds} onChange={setTagIds} searchable
         data={(tags.data ?? []).map(tag => ({ value: tag.id, label: tag.name }))} /><Checkbox label="Abstract type" checked={abstract} onChange={event => setAbstract(event.currentTarget.checked)} /></>}
     {kind === 'property' && <><TextInput label="Internal key (optional)" value={key} onChange={event => setKey(event.currentTarget.value)} placeholder="storage.volume" />
-      <Select label="Value type" value={valueType} onChange={value => { setValueType(value ?? 'text'); setDimension(null); setAllowedUnits([]) }} data={['text', 'integer', 'decimal', 'boolean', 'date', 'datetime', 'quantity']} />
-      {valueType === 'quantity' && <><Select label="Measurement" value={dimension} required onChange={value => { const selected = catalog.data?.find(item => item.id === value); setDimension(value ? String(value) : null); setAllowedUnits(selected?.units.map(unit => unit.id) ?? []) }}
+      <Select label="Value type" value={valueType} onChange={value => { setValueType(value ?? 'text'); setDimension(null); setAllowedUnits([]) }} data={['text', 'integer', 'decimal', 'boolean', 'date', 'datetime', 'quantity', { value: 'quantity_range', label: 'Quantity: fixed value or range' }]} />
+      {(valueType === 'quantity' || valueType === 'quantity_range') && <><Select label="Measurement" value={dimension} required onChange={value => { const selected = catalog.data?.find(item => item.id === value); setDimension(value ? String(value) : null); setAllowedUnits(selected?.units.map(unit => unit.id) ?? []) }}
         data={(catalog.data ?? []).map(item => ({ value: item.id, label: item.label }))} /><Checkbox.Group label="Allowed units" value={allowedUnits} onChange={setAllowedUnits}>{(catalog.data?.find(item => item.id === dimension)?.units ?? []).map(unit => <Checkbox key={unit.id} value={unit.id} label={unit.label} />)}</Checkbox.Group></>}
     </>}
     {added && <Alert color="green">{added}</Alert>}

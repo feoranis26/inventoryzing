@@ -1,0 +1,12 @@
+# Ubuntu USB override. Run from the repository root with -f compose.yaml -f deploy/compose.printer-usb.yaml.
+services:
+  printer-agent:
+    environment:
+      Inventoryzing__Printer__Transport: usb
+      Inventoryzing__Printer__UsbSerialNumber: ${IZ_PRINTER_USB_SERIAL:?Set the printer USB serial number}
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    device_cgroup_rules:
+      - 'c 189:* rw'
+    group_add:
+      - ${IZ_PRINTER_USB_GID:?Set the host inventoryzing group numeric GID}

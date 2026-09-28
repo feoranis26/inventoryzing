@@ -4,6 +4,7 @@ import re
 import secrets
 from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import Connection, Engine, text
@@ -16,12 +17,14 @@ from inventoryzing.contracts import (
     ConvertPropertyUnit,
     CreateObject,
     CreatePropertyDefinition,
+    CreatePropertyGroup,
     CreateStockHolding,
     CreateTag,
     CreateType,
     DeleteDefinition,
     EditObject,
     EditPropertyDefinition,
+    EditPropertyGroup,
     EditTag,
     EditType,
     MoveObject,
@@ -31,6 +34,7 @@ from inventoryzing.contracts import (
     SetStockPolicy,
     SetTagParents,
     SetTypePropertyDeclaration,
+    SetTypePropertyGroup,
     SplitStock,
     TransferStock,
 )
@@ -40,6 +44,9 @@ GRAPH_LOCK = 841901
 TAG_GRAPH_LOCK = 841902
 TYPE_GRAPH_LOCK = 841903
 PERMISSIONS = {
+    "property.group.create": "inventory.edit",
+    "property.group.edit": "inventory.edit",
+    "type.property.group.set": "inventory.edit",
     "object.create": "inventory.create",
     "type.create": "inventory.create",
     "type.edit": "inventory.edit",
@@ -214,6 +221,45 @@ def normalize_property_value(definition: dict, value: object) -> object:
         if instant.tzinfo is None:
             raise CommandError("INVALID_PROPERTY_VALUE", "Datetime values require a timezone.", 422)
         return instant.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    if kind == "quantity_range":
+        if not isinstance(value, dict) or value.get("mode") not in ("fixed", "range"):
+            raise CommandError("INVALID_PROPERTY_VALUE", "Choose Fixed or Adjustable range.", 422)
+        fixed = value["mode"] == "fixed"
+        keys = {"mode", "amount", "unit"} if fixed else {"mode", "min", "max", "unit"}
+        if set(value) != keys:
+            raise CommandError(
+                "INVALID_PROPERTY_VALUE",
+                "Supply either one fixed amount or both range endpoints, with a unit.",
+                422,
+            )
+        scalar = {**definition, "value_type": "quantity"}
+        lower = cast(
+            dict[str, Any],
+            normalize_property_value(
+                scalar, {"amount": value["amount" if fixed else "min"], "unit": value["unit"]}
+            ),
+        )
+        upper = (
+            lower
+            if fixed
+            else cast(
+                dict[str, Any],
+                normalize_property_value(scalar, {"amount": value["max"], "unit": value["unit"]}),
+            )
+        )
+        if Decimal(lower["amount"]) > Decimal(upper["amount"]):
+            raise CommandError(
+                "INVALID_PROPERTY_VALUE", "The minimum must not exceed the maximum.", 422
+            )
+        return {
+            "mode": value["mode"],
+            "lower": lower["amount"],
+            "upper": upper["amount"],
+            "unit": lower["unit"],
+            "display_lower": lower["display_amount"],
+            "display_upper": upper["display_amount"],
+            "display_unit": value["unit"],
+        }
     if kind == "quantity":
         if not isinstance(value, dict) or set(value) != {"amount", "unit"}:
             raise CommandError(
@@ -250,7 +296,7 @@ def ensure_property_applicable(
             WHERE type.parent_type_id IS NOT NULL
         )
         SELECT EXISTS (
-            SELECT 1 FROM iz.type_property_declarations declaration
+            SELECT 1 FROM iz.available_type_properties declaration
             JOIN ancestors ON ancestors.id = declaration.type_id
             WHERE declaration.property_id = :property
         )
@@ -275,7 +321,7 @@ def ensure_all_property_entries_applicable(connection: Connection) -> None:
             WHERE parent.parent_type_id IS NOT NULL
         ), applicable AS (
             SELECT DISTINCT lineage.descendant_id AS type_id, declaration.property_id
-            FROM lineage JOIN iz.type_property_declarations declaration
+            FROM lineage JOIN iz.available_type_properties declaration
               ON declaration.type_id = lineage.ancestor_id
         )
         SELECT value.target_id, definition.key
@@ -451,6 +497,9 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 EditType,
                 SetObjectType,
                 SetTypePropertyDeclaration,
+                CreatePropertyGroup,
+                EditPropertyGroup,
+                SetTypePropertyGroup,
                 SetPropertyValue,
                 CreatePropertyDefinition,
                 DeleteDefinition,
@@ -464,6 +513,13 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
         ):
             connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": TYPE_GRAPH_LOCK})
         references: dict[UUID, str] = {}
+        if isinstance(payload, (CreatePropertyGroup, EditPropertyGroup)):
+            for property_id in payload.property_ids:
+                references[property_id] = "property_definition"
+        if isinstance(payload, (EditPropertyGroup, SetTypePropertyGroup)):
+            references[payload.group_id] = "property_group"
+        if isinstance(payload, SetTypePropertyGroup):
+            references[payload.type_id] = "object_type"
         if isinstance(payload, (CreateObject, CreateType)) and payload.copy_properties_from:
             references[payload.copy_properties_from.id] = (
                 "object" if isinstance(payload, CreateObject) else "object_type"
@@ -542,7 +598,7 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
         elif isinstance(payload, CreatePropertyDefinition) and payload.type_id:
             versioned_target = payload.type_id
             expected_version = payload.expected_version
-        elif isinstance(payload, SetTypePropertyDeclaration):
+        elif isinstance(payload, (SetTypePropertyDeclaration, SetTypePropertyGroup)):
             versioned_target = payload.type_id
             expected_version = payload.expected_version
         elif isinstance(payload, (SetPropertyValue, ConvertPropertyUnit)):
@@ -553,6 +609,9 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
             expected_version = payload.expected_version
         if isinstance(payload, DeleteDefinition):
             versioned_target = payload.entity_id
+            expected_version = payload.expected_version
+        if isinstance(payload, EditPropertyGroup):
+            versioned_target = payload.group_id
             expected_version = payload.expected_version
         if isinstance(payload, EditPropertyDefinition):
             versioned_target = payload.property_id
@@ -592,7 +651,14 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
         additional_subjects: list[tuple[UUID, int]] = []
         if isinstance(
             payload,
-            (CreateObject, CreateStockHolding, CreateType, CreateTag, CreatePropertyDefinition),
+            (
+                CreateObject,
+                CreateStockHolding,
+                CreateType,
+                CreateTag,
+                CreatePropertyDefinition,
+                CreatePropertyGroup,
+            ),
         ):
             if command.authority_epoch != 1:
                 raise CommandError(
@@ -614,6 +680,8 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                         if isinstance(payload, CreateType)
                         else "property_definition"
                         if isinstance(payload, CreatePropertyDefinition)
+                        else "property_group"
+                        if isinstance(payload, CreatePropertyGroup)
                         else "tag"
                     ),
                     "site": command.authority_site,
@@ -700,12 +768,21 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                             INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
                             VALUES (:id, :quantity, :policy_type)
                         """),
-                            {"id": entity_id, "quantity": amount,
-                             "policy_type": policy["policy_type_id"]},
+                            {
+                                "id": entity_id,
+                                "quantity": amount,
+                                "policy_type": policy["policy_type_id"],
+                            },
                         )
                         stock_movements.append(
-                            {"holding": entity_id, "operation": "initial", "delta": amount,
-                             "balance": amount, "reason": "", "counterparty": None}
+                            {
+                                "holding": entity_id,
+                                "operation": "initial",
+                                "delta": amount,
+                                "balance": amount,
+                                "reason": "",
+                                "counterparty": None,
+                            }
                         )
             elif isinstance(payload, CreateType):
                 connection.execute(
@@ -739,6 +816,22 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                             for parent_id in payload.parent_ids
                         ],
                     )
+            elif isinstance(payload, CreatePropertyGroup):
+                connection.execute(
+                    text("""
+                    INSERT INTO iz.property_groups(id, name, description)
+                    VALUES (:id, :name, :description)
+                """),
+                    {"id": entity_id, "name": payload.name, "description": payload.description},
+                )
+                for property_id in payload.property_ids:
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.property_group_members(group_id, property_id)
+                        VALUES (:group, :property)
+                    """),
+                        {"group": entity_id, "property": property_id},
+                    )
             else:
                 assert isinstance(payload, CreatePropertyDefinition)
                 generated_key = payload.key or f"site.p_{entity_id.hex}"
@@ -757,7 +850,7 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     )
                 allowed_units = list(dict.fromkeys(payload.allowed_units))
                 canonical_unit = None
-                if payload.value_type == "quantity":
+                if payload.value_type in ("quantity", "quantity_range"):
                     dimension = DIMENSIONS[payload.quantity_dimension]
                     if any(
                         unit not in {entry.id for entry in dimension.units}
@@ -832,6 +925,14 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                         INSERT INTO iz.type_property_declarations(type_id, property_id)
                         SELECT :target, property_id FROM iz.type_property_declarations
                         WHERE type_id = :source
+                    """),
+                        {"target": entity_id, "source": source.id},
+                    )
+                if isinstance(payload, CreateType):
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.type_property_groups(type_id, group_id)
+                        SELECT :target, group_id FROM iz.type_property_groups WHERE type_id=:source
                     """),
                         {"target": entity_id, "source": source.id},
                     )
@@ -911,9 +1012,16 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 raise CommandError(
                     "INSUFFICIENT_STOCK", "This split would make the source stock negative.", 409
                 )
-            source_placement = connection.execute(text("""
+            source_placement = (
+                connection.execute(
+                    text("""
                 SELECT parent_id, relation FROM iz.placements WHERE object_id=:id
-            """), {"id": payload.source_holding_id}).mappings().one()
+            """),
+                    {"id": payload.source_holding_id},
+                )
+                .mappings()
+                .one()
+            )
             entity_id = uuid4()
             version = 1
             parent_id = (
@@ -922,42 +1030,73 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 else source_placement["parent_id"]
             )
             relation = payload.relation or source_placement["relation"]
-            connection.execute(text("""
+            connection.execute(
+                text("""
                 INSERT INTO iz.entities(id, kind, home_site_id, write_site_id)
                 VALUES (:id, 'object', :site, :site)
-            """), {"id": entity_id, "site": command.authority_site})
-            connection.execute(text("""
+            """),
+                {"id": entity_id, "site": command.authority_site},
+            )
+            connection.execute(
+                text("""
                 INSERT INTO iz.objects(id, name, description, object_type_id)
                 VALUES (:id, :name, :description, :type)
-            """), {"id": entity_id, "name": payload.name, "description": payload.description,
-                   "type": source["object_type_id"]})
-            connection.execute(text("""
+            """),
+                {
+                    "id": entity_id,
+                    "name": payload.name,
+                    "description": payload.description,
+                    "type": source["object_type_id"],
+                },
+            )
+            connection.execute(
+                text("""
                 INSERT INTO iz.placements(object_id, parent_id, relation)
                 VALUES (:id, :parent, :relation)
-            """), {"id": entity_id, "parent": parent_id, "relation": relation})
-            connection.execute(text("""
+            """),
+                {"id": entity_id, "parent": parent_id, "relation": relation},
+            )
+            connection.execute(
+                text("""
                 INSERT INTO iz.stock_holdings(object_id, quantity, policy_type_id)
                 VALUES (:id, :quantity, :policy)
-            """), {"id": entity_id, "quantity": amount, "policy": source["policy_type_id"]})
+            """),
+                {"id": entity_id, "quantity": amount, "policy": source["policy_type_id"]},
+            )
             if payload.allocate_alias:
                 alias = allocate_alias(connection, command.authority_site, entity_id)
             connection.execute(
                 text("UPDATE iz.stock_holdings SET quantity=:quantity WHERE object_id=:id"),
                 {"id": payload.source_holding_id, "quantity": source_balance},
             )
-            source_version = connection.scalar(text("""
+            source_version = connection.scalar(
+                text("""
                 UPDATE iz.entities SET version=version + 1, updated_at=now()
                 WHERE id=:id RETURNING version
-            """), {"id": payload.source_holding_id})
+            """),
+                {"id": payload.source_holding_id},
+            )
             additional_subjects.append((payload.source_holding_id, source_version))
-            stock_movements.extend([
-                {"holding": payload.source_holding_id, "operation": "transfer_out",
-                 "delta": -amount,
-                 "balance": source_balance, "reason": payload.reason, "counterparty": entity_id},
-                {"holding": entity_id, "operation": "transfer_in", "delta": amount,
-                 "balance": amount, "reason": payload.reason,
-                 "counterparty": payload.source_holding_id},
-            ])
+            stock_movements.extend(
+                [
+                    {
+                        "holding": payload.source_holding_id,
+                        "operation": "transfer_out",
+                        "delta": -amount,
+                        "balance": source_balance,
+                        "reason": payload.reason,
+                        "counterparty": entity_id,
+                    },
+                    {
+                        "holding": entity_id,
+                        "operation": "transfer_in",
+                        "delta": amount,
+                        "balance": amount,
+                        "reason": payload.reason,
+                        "counterparty": payload.source_holding_id,
+                    },
+                ]
+            )
         else:
             if isinstance(payload, TransferStock):
                 entity_id = payload.source_holding_id
@@ -972,8 +1111,10 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     ],
                     "object_type": [
                         ("SELECT count(*) FROM iz.objects WHERE object_type_id=:id", "objects"),
-                        ("SELECT count(*) FROM iz.stock_policies WHERE type_id=:id",
-                         "stock policy"),
+                        (
+                            "SELECT count(*) FROM iz.stock_policies WHERE type_id=:id",
+                            "stock policy",
+                        ),
                         (
                             "SELECT count(*) FROM iz.object_types t "
                             "JOIN iz.entities e ON e.id=t.id "
@@ -981,7 +1122,17 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                             "child types",
                         ),
                     ],
+                    "property_group": [
+                        (
+                            "SELECT count(*) FROM iz.type_property_groups WHERE group_id=:id",
+                            "type assignments",
+                        ),
+                    ],
                     "property_definition": [
+                        (
+                            "SELECT count(*) FROM iz.property_group_members WHERE property_id=:id",
+                            "property groups",
+                        ),
                         (
                             "SELECT count(*) FROM iz.type_property_declarations "
                             "WHERE property_id=:id",
@@ -997,6 +1148,11 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     count = connection.scalar(text(query), {"id": entity_id})
                     if count:
                         raise CommandError("DEFINITION_IN_USE", f"Cannot delete: {count} {label}.")
+                if payload.entity_kind == "property_group":
+                    connection.execute(
+                        text("DELETE FROM iz.property_group_members WHERE group_id=:id"),
+                        {"id": entity_id},
+                    )
                 if payload.entity_kind == "tag":
                     connection.execute(
                         text("DELETE FROM iz.tag_edges WHERE child_id=:id"), {"id": entity_id}
@@ -1005,6 +1161,7 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     for table, column in (
                         ("entity_tags", "entity_id"),
                         ("type_property_declarations", "type_id"),
+                        ("type_property_groups", "type_id"),
                         ("property_values", "target_id"),
                     ):
                         connection.execute(
@@ -1013,6 +1170,44 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                 connection.execute(
                     text("UPDATE iz.entities SET archived_at=now() WHERE id=:id"), {"id": entity_id}
                 )
+            elif isinstance(payload, EditPropertyGroup):
+                connection.execute(
+                    text("""
+                    UPDATE iz.property_groups SET name=:name, description=:description WHERE id=:id
+                """),
+                    {"id": entity_id, "name": payload.name, "description": payload.description},
+                )
+                connection.execute(
+                    text("DELETE FROM iz.property_group_members WHERE group_id=:id"),
+                    {"id": entity_id},
+                )
+                for property_id in payload.property_ids:
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.property_group_members(group_id, property_id)
+                        VALUES (:group, :property)
+                    """),
+                        {"group": entity_id, "property": property_id},
+                    )
+                ensure_all_property_entries_applicable(connection)
+            elif isinstance(payload, SetTypePropertyGroup):
+                if payload.applicable:
+                    connection.execute(
+                        text("""
+                        INSERT INTO iz.type_property_groups(type_id, group_id)
+                        VALUES (:type, :group)
+                        ON CONFLICT DO NOTHING
+                    """),
+                        {"type": entity_id, "group": payload.group_id},
+                    )
+                else:
+                    connection.execute(
+                        text("""
+                        DELETE FROM iz.type_property_groups WHERE type_id=:type AND group_id=:group
+                    """),
+                        {"type": entity_id, "group": payload.group_id},
+                    )
+                    ensure_all_property_entries_applicable(connection)
             elif isinstance(payload, EditPropertyDefinition):
                 connection.execute(
                     text("""
@@ -1027,16 +1222,21 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
 
                 fields = resolve_stored_properties(connection, entity_id, payload.target_kind)
                 field = next((field for field in fields if field.id == payload.property_id), None)
-                if field is None or field.type != "quantity" or field.local_state != "value":
+                if (
+                    field is None
+                    or field.type not in ("quantity", "quantity_range")
+                    or field.local_state != "value"
+                ):
                     raise CommandError(
                         "NO_LOCAL_QUANTITY", "Set a local quantity before converting."
                     )
                 if payload.unit not in field.allowed_units:
                     raise CommandError("INVALID_PROPERTY_VALUE", "The unit is not allowed.", 422)
-                value = dict(field.value)
-                value["display_amount"] = display_amount(
-                    value["amount"], field.quantity_dimension, payload.unit
-                )
+                value = cast(dict[str, Any], field.value).copy()
+                for key in ["lower", "upper"] if field.type == "quantity_range" else ["amount"]:
+                    value["display_" + key] = display_amount(
+                        value[key], field.quantity_dimension, payload.unit
+                    )
                 value["display_unit"] = payload.unit
                 connection.execute(
                     text("""
@@ -1069,13 +1269,17 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     if payload.object_type_id
                     else None
                 )
-                existing_holding = connection.execute(
-                    text("""
+                existing_holding = (
+                    connection.execute(
+                        text("""
                     SELECT quantity, policy_type_id FROM iz.stock_holdings
                     WHERE object_id=:id FOR UPDATE
                 """),
-                    {"id": entity_id},
-                ).mappings().first()
+                        {"id": entity_id},
+                    )
+                    .mappings()
+                    .first()
+                )
                 if target_policy is None and existing_holding is not None:
                     # Changing back to a non-stock type deliberately dissolves the
                     # holding.  Stock is a property of the typed object, so its
@@ -1102,8 +1306,14 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                         {"id": entity_id, "policy_type": target_policy["policy_type_id"]},
                     )
                     stock_movements.append(
-                        {"holding": entity_id, "operation": "initial", "delta": Decimal("0"),
-                         "balance": Decimal("0"), "reason": "", "counterparty": None}
+                        {
+                            "holding": entity_id,
+                            "operation": "initial",
+                            "delta": Decimal("0"),
+                            "balance": Decimal("0"),
+                            "reason": "",
+                            "counterparty": None,
+                        }
                     )
                 elif (
                     target_policy is not None
@@ -1352,15 +1562,19 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                         "allow_negative": payload.allow_negative,
                     },
                 )
-                uninitialized = connection.execute(
-                    text("""
+                uninitialized = (
+                    connection.execute(
+                        text("""
                     SELECT object.id FROM iz.objects object
                     LEFT JOIN iz.stock_holdings holding ON holding.object_id=object.id
                     WHERE object.object_type_id=:type AND holding.object_id IS NULL
                     FOR UPDATE OF object
                 """),
-                    {"type": entity_id},
-                ).mappings().all()
+                        {"type": entity_id},
+                    )
+                    .mappings()
+                    .all()
+                )
                 for object_row in uninitialized:
                     object_id = object_row["id"]
                     connection.execute(
@@ -1379,8 +1593,14 @@ def execute_command(engine: Engine, command: Command, actor_id: UUID) -> Command
                     )
                     additional_subjects.append((object_id, object_version))
                     stock_movements.append(
-                        {"holding": object_id, "operation": "initial", "delta": Decimal("0"),
-                         "balance": Decimal("0"), "reason": "", "counterparty": None}
+                        {
+                            "holding": object_id,
+                            "operation": "initial",
+                            "delta": Decimal("0"),
+                            "balance": Decimal("0"),
+                            "reason": "",
+                            "counterparty": None,
+                        }
                     )
             elif isinstance(payload, ChangeStock):
                 holding = stock_holding_for_update(connection, entity_id)

@@ -1,3 +1,4 @@
+import { quantityRangeInput } from '../../quantityRange'
 import { api } from '../../api'
 import type { EntityTags, InventoryObject } from '../../api'
 import type { PropertyValue } from '../../Properties'
@@ -12,6 +13,7 @@ export async function loadIntakeCopy(id: string, signal?: AbortSignal) {
   for (const field of properties) {
     if (!field.id || !field.editable || field.local_state === 'inherit') continue
     if (field.local_state === 'unset') values[field.id] = null
+    else if (field.type === 'quantity_range') values[field.id] = quantityRangeInput(field.value, field.canonical_unit ?? '')
     else if (field.type === 'quantity' && field.value && typeof field.value === 'object') {
       const quantity = field.value as Record<string, unknown>
       values[field.id] = { amount: quantity.display_amount ?? quantity.amount,

@@ -15,7 +15,7 @@ def test_schema_and_receipt_history_are_separate():
         with engine.connect() as connection:
             assert (
                 connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0014_stock_holding_backfill"
+                == "0015_property_groups"
             )
             tables = set(
                 connection.scalars(

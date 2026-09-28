@@ -52,6 +52,11 @@ public static class PrinterAgentHost
         services.AddSingleton(provider =>
         {
             var options = provider.GetRequiredService<IOptions<PrinterAgentOptions>>().Value;
+            return new UsbRasterPrinter(() => new BrotherRasterUsbTransport(options.UsbSerialNumber));
+        });
+        services.AddSingleton(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<PrinterAgentOptions>>().Value;
             var token = File.ReadAllText(options.CredentialFile).Trim();
             var httpClient = new HttpClient { BaseAddress = EnsureTrailingSlash(options.CoordinatorUri!) };
             return new PrintRequestClient(httpClient, token,
@@ -68,7 +73,8 @@ public static class PrinterAgentHost
                 options.PollInterval,
                 options.StatusPollInterval,
                 options.CompletionTimeout,
-                provider.GetRequiredService<ILogger<RasterPrintWorker>>());
+                provider.GetRequiredService<ILogger<RasterPrintWorker>>(),
+                options.Transport == "usb" ? provider.GetRequiredService<UsbRasterPrinter>() : null);
         });
         services.AddHostedService(provider =>
             provider.GetRequiredService<RasterPrintWorker>());
@@ -79,13 +85,14 @@ public static class PrinterAgentHost
                 provider.GetRequiredService<PrintRequestClient>(),
                 options.RasterHost,
                 options.StatusPort,
-                provider.GetRequiredService<ILogger<PrinterMediaWorker>>());
+                provider.GetRequiredService<ILogger<PrinterMediaWorker>>(),
+                options.Transport == "usb" ? provider.GetRequiredService<UsbRasterPrinter>() : null);
         });
         services.AddHostedService(provider =>
             provider.GetRequiredService<PrinterMediaWorker>());
     }
 
-    private static bool ValidPrinterOptions(PrinterAgentOptions options)
+    internal static bool ValidPrinterOptions(PrinterAgentOptions options)
     {
         if (!options.Enabled)
         {
@@ -95,9 +102,11 @@ public static class PrinterAgentHost
             options.CoordinatorUri.Scheme is "http" or "https" &&
             Path.IsPathFullyQualified(options.CredentialFile) &&
             !string.IsNullOrWhiteSpace(options.PrinterId) &&
-            !string.IsNullOrWhiteSpace(options.RasterHost) &&
-            options.RasterPort is > 0 and <= ushort.MaxValue &&
-            options.StatusPort is > 0 and <= ushort.MaxValue &&
+            (options.Transport == "usb"
+                ? !string.IsNullOrWhiteSpace(options.UsbSerialNumber)
+                : options.Transport == "tcp" && !string.IsNullOrWhiteSpace(options.RasterHost) &&
+                  options.RasterPort is > 0 and <= ushort.MaxValue &&
+                  options.StatusPort is > 0 and <= ushort.MaxValue) &&
             options.PollInterval >= TimeSpan.FromMilliseconds(250) &&
             options.StatusPollInterval >= TimeSpan.FromMilliseconds(50) &&
             options.CompletionTimeout >= TimeSpan.FromSeconds(1);

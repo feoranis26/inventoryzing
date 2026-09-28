@@ -195,7 +195,8 @@ public sealed class PrinterMediaWorker(
     PrintRequestClient client,
     string host,
     int statusPort,
-    ILogger<PrinterMediaWorker> logger) : BackgroundService
+    ILogger<PrinterMediaWorker> logger,
+    UsbRasterPrinter? usb = null) : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(1);
@@ -209,13 +210,18 @@ public sealed class PrinterMediaWorker(
             {
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                 deadline.CancelAfter(ProbeTimeout);
-                var status = await statusClient.GetStatusAsync(deadline.Token).ConfigureAwait(false);
-                await client.ReportMediaAsync(
-                    status.MediaWidthMillimeters,
-                    status.MediaLengthMillimeters,
-                    status.MediaType,
-                    status.State.ToString(),
-                    deadline.Token).ConfigureAwait(false);
+                var status = usb is null
+                    ? await statusClient.GetStatusAsync(deadline.Token).ConfigureAwait(false)
+                    : await usb.ProbeIfIdleAsync(deadline.Token).ConfigureAwait(false);
+                if (status is not null)
+                {
+                    await client.ReportMediaAsync(
+                        status.MediaWidthMillimeters,
+                        status.MediaLengthMillimeters,
+                        status.MediaType,
+                        status.State.ToString(),
+                        deadline.Token).ConfigureAwait(false);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -248,7 +254,8 @@ public sealed class RasterPrintWorker(
     TimeSpan idlePollInterval,
     TimeSpan statusPollInterval,
     TimeSpan completionTimeout,
-    ILogger<RasterPrintWorker> logger) : BackgroundService
+    ILogger<RasterPrintWorker> logger,
+    UsbRasterPrinter? usb = null) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -291,6 +298,13 @@ public sealed class RasterPrintWorker(
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             timeout.CancelAfter(completionTimeout);
             var token = timeout.Token;
+            if (usb is not null)
+            {
+                await usb.PrintAsync(claim, token).ConfigureAwait(false);
+                await ReportAsync(claim.Id, "Completed", "The label printed successfully.", stoppingToken)
+                    .ConfigureAwait(false);
+                return;
+            }
             var statusClient = new BrotherSnmpStatusClient(host, statusPort);
             var preflight = await statusClient.GetStatusAsync(token).ConfigureAwait(false);
             logger.LogInformation("Label {RequestId}: preflight returned in {ElapsedMs} ms; media {Width} x {Length}, state {State}",
@@ -355,7 +369,8 @@ public sealed class RasterPrintWorker(
         {
             var detail = UserDetail(exception, stage);
             // Deliver the outcome before writing the full exception to the console.
-            await ReportAsync(claim.Id, dispatchStarted && exception is OperationCanceledException ? "Unknown" : "Rejected", detail, stoppingToken)
+            await ReportAsync(claim.Id, exception is UsbPrintOutcomeUnknownException ||
+                dispatchStarted && exception is OperationCanceledException ? "Unknown" : "Rejected", detail, stoppingToken)
                 .ConfigureAwait(false);
             logger.LogWarning(exception, "Label {RequestId} failed during {Stage}; elapsed {ElapsedMs} ms",
                 claim.Id, stage, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
@@ -364,7 +379,7 @@ public sealed class RasterPrintWorker(
 
     private static string UserDetail(Exception exception, string stage)
     {
-        if (exception is InvalidOperationException)
+        if (exception is InvalidOperationException or UsbPrintOutcomeUnknownException)
         {
             return exception.Message;
         }

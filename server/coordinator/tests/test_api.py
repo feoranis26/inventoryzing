@@ -18,7 +18,22 @@ pytestmark = pytest.mark.integration
 def test_unit_catalog_and_quantity_definition_dimensions(client):
     session = sign_in(client)
     catalog = client.get("/api/property-units").json()
-    assert {item["id"] for item in catalog} == {"count", "mass", "length", "area", "volume"}
+    assert {item["id"] for item in catalog} == {
+        "count",
+        "mass",
+        "length",
+        "area",
+        "volume",
+        "voltage",
+        "current",
+        "resistance",
+        "power",
+        "energy",
+        "capacitance",
+        "inductance",
+        "frequency",
+        "charge",
+    }
     for dimension in catalog:
         response = client.post(
             "/api/commands",
@@ -42,6 +57,92 @@ def test_unit_catalog_and_quantity_definition_dimensions(client):
     for dimension in catalog:
         stored = next(item for item in definitions if item["key"] == f"test.{dimension['id']}")
         assert stored["canonical_unit"] == dimension["canonical_unit"]
+
+
+def test_quantity_range_match_query_uses_effective_canonical_bounds(client):
+    session = sign_in(client)
+
+    def submit(payload):
+        response = client.post(
+            "/api/commands",
+            json={
+                "authority_site": session["site_id"],
+                "authority_epoch": 1,
+                "command_epoch": session["command_epoch"],
+                "command_id": str(uuid4()),
+                "payload": payload,
+            },
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    field = submit(
+        {
+            "kind": "property.definition.create",
+            "label": "DC input",
+            "value_type": "quantity_range",
+            "quantity_dimension": "voltage",
+            "allowed_units": ["V", "mV"],
+        }
+    )
+    group = submit(
+        {
+            "kind": "property.group.create",
+            "name": "DC powered device",
+            "property_ids": [field["entity_id"]],
+        }
+    )
+    object_type = submit({"kind": "type.create", "name": "Converter"})
+    submit(
+        {
+            "kind": "type.property.group.set",
+            "type_id": object_type["entity_id"],
+            "expected_version": 1,
+            "group_id": group["entity_id"],
+            "applicable": True,
+        }
+    )
+    submit(
+        {
+            "kind": "property.value.set",
+            "target_id": object_type["entity_id"],
+            "target_kind": "object_type",
+            "expected_version": 2,
+            "property_id": field["entity_id"],
+            "mode": "value",
+            "value": {"mode": "range", "min": "3", "max": "24", "unit": "V"},
+        }
+    )
+    inherited = submit(
+        {
+            "kind": "object.create",
+            "name": "Adjustable converter",
+            "object_type_id": object_type["entity_id"],
+        }
+    )
+    fixed = submit(
+        {
+            "kind": "object.create",
+            "name": "Fixed controller",
+            "object_type_id": object_type["entity_id"],
+            "property_values": [
+                {
+                    "property_id": field["entity_id"],
+                    "mode": "value",
+                    "value": {"mode": "fixed", "amount": "12000", "unit": "mV"},
+                }
+            ],
+        }
+    )
+    matches = client.get(
+        f"/api/properties/{field['entity_id']}/matches", params={"amount": "12", "unit": "V"}
+    )
+    assert matches.status_code == 200, matches.text
+    assert {entry["id"] for entry in matches.json()} == {inherited["entity_id"], fixed["entity_id"]}
+    outside = client.get(
+        f"/api/properties/{field['entity_id']}/matches", params={"amount": "25", "unit": "V"}
+    )
+    assert outside.status_code == 200 and outside.json() == []
 
 
 @pytest.fixture
@@ -94,21 +195,32 @@ def test_site_settings_logo_is_authorized_versioned_and_audited(client):
     settings = client.get("/api/site/settings").json()
     assert settings["display_name"] == "Test workshop"
     assert settings["has_logo"] is False
-    renamed = client.put("/api/site/settings", json={
-        "display_name": "Machine shop", "expected_version": settings["settings_version"],
-    })
+    renamed = client.put(
+        "/api/site/settings",
+        json={
+            "display_name": "Machine shop",
+            "expected_version": settings["settings_version"],
+        },
+    )
     assert renamed.status_code == 200, renamed.text
     assert renamed.json()["display_name"] == "Machine shop"
-    stale = client.put("/api/site/settings", json={
-        "display_name": "Wrong", "expected_version": settings["settings_version"],
-    })
+    stale = client.put(
+        "/api/site/settings",
+        json={
+            "display_name": "Wrong",
+            "expected_version": settings["settings_version"],
+        },
+    )
     assert stale.status_code == 409
     raw = BytesIO()
     Image.new("RGBA", (20, 10), (0, 0, 0, 0)).save(raw, format="PNG")
-    updated = client.put("/api/site/logo", json={
-        "logo_base64": base64.b64encode(raw.getvalue()).decode(),
-        "expected_version": renamed.json()["settings_version"],
-    })
+    updated = client.put(
+        "/api/site/logo",
+        json={
+            "logo_base64": base64.b64encode(raw.getvalue()).decode(),
+            "expected_version": renamed.json()["settings_version"],
+        },
+    )
     assert updated.status_code == 200, updated.text
     assert updated.json()["has_logo"] is True
     logo = client.get("/api/site/logo")
@@ -128,9 +240,16 @@ def test_site_settings_require_explicit_permission(client):
             text("DELETE FROM iz.role_permissions WHERE permission LIKE 'system.config.%'")
         )
     assert client.get("/api/site/settings").status_code == 403
-    assert client.put("/api/site/settings", json={
-        "display_name": "No", "expected_version": 1,
-    }).status_code == 403
+    assert (
+        client.put(
+            "/api/site/settings",
+            json={
+                "display_name": "No",
+                "expected_version": 1,
+            },
+        ).status_code
+        == 403
+    )
 
 
 def test_runtime_database_role_can_change_site_settings(client):
@@ -148,10 +267,13 @@ def test_runtime_database_role_can_change_site_settings(client):
     try:
         sign_in(client)
         settings = client.get("/api/site/settings").json()
-        response = client.put("/api/site/settings", json={
-            "display_name": "Runtime role workshop",
-            "expected_version": settings["settings_version"],
-        })
+        response = client.put(
+            "/api/site/settings",
+            json={
+                "display_name": "Runtime role workshop",
+                "expected_version": settings["settings_version"],
+            },
+        )
         assert response.status_code == 200, response.text
     finally:
         event.remove(engine, "begin", restrict)
@@ -162,31 +284,54 @@ def test_account_and_role_administration_uses_atomic_permissions_and_revokes_ses
     permissions = client.get("/api/admin/permissions")
     assert permissions.status_code == 200
     assert {"role.manage", "role.assign", "user.manage"} <= set(permissions.json())
-    role = client.post("/api/admin/roles", json={
-        "name": "Viewer", "description": "Read only", "permissions": ["inventory.read"],
-    })
+    role = client.post(
+        "/api/admin/roles",
+        json={
+            "name": "Viewer",
+            "description": "Read only",
+            "permissions": ["inventory.read"],
+        },
+    )
     assert role.status_code == 200, role.text
     assert role.json()["permissions"] == ["inventory.read"]
-    account = client.post("/api/admin/accounts", json={
-        "login": "worker", "password": "worker-password-only", "role_ids": [role.json()["id"]],
-    })
+    account = client.post(
+        "/api/admin/accounts",
+        json={
+            "login": "worker",
+            "password": "worker-password-only",
+            "role_ids": [role.json()["id"]],
+        },
+    )
     assert account.status_code == 200, account.text
     assert account.json()["login"] == "worker"
     assert account.json()["permissions"] == ["inventory.read"]
-    logged_in = client.post("/api/auth/login", json={
-        "login": "worker", "password": "worker-password-only",
-    })
+    logged_in = client.post(
+        "/api/auth/login",
+        json={
+            "login": "worker",
+            "password": "worker-password-only",
+        },
+    )
     assert logged_in.status_code == 200
     sign_in(client)
     worker = account.json()
-    disabled = client.put(f"/api/admin/accounts/{worker['id']}", json={
-        "principal_id": None, "role_ids": [role.json()["id"]], "disabled": True,
-        "expected_version": worker["version"],
-    })
+    disabled = client.put(
+        f"/api/admin/accounts/{worker['id']}",
+        json={
+            "principal_id": None,
+            "role_ids": [role.json()["id"]],
+            "disabled": True,
+            "expected_version": worker["version"],
+        },
+    )
     assert disabled.status_code == 200, disabled.text
-    failed_login = client.post("/api/auth/login", json={
-        "login": "worker", "password": "worker-password-only",
-    })
+    failed_login = client.post(
+        "/api/auth/login",
+        json={
+            "login": "worker",
+            "password": "worker-password-only",
+        },
+    )
     assert failed_login.status_code == 401
     sign_in(client)
     accounts = client.get("/api/admin/accounts")
@@ -195,32 +340,55 @@ def test_account_and_role_administration_uses_atomic_permissions_and_revokes_ses
 
 def test_administration_cannot_disable_last_usable_administrator(client):
     session = sign_in(client)
-    response = client.put(f"/api/admin/accounts/{session['account_id']}", json={
-        "principal_id": None, "role_ids": [], "disabled": True, "expected_version": 1,
-    })
+    response = client.put(
+        f"/api/admin/accounts/{session['account_id']}",
+        json={
+            "principal_id": None,
+            "role_ids": [],
+            "disabled": True,
+            "expected_version": 1,
+        },
+    )
     assert response.status_code == 409
     assert client.get("/api/admin/roles").status_code == 200
 
 
 def test_principals_are_distinct_from_accounts_and_archive_after_unlinking(client):
     sign_in(client)
-    team = client.post("/api/principals", json={
-        "display_name": "Electronics team", "principal_kind": "team",
-    })
-    person = client.post("/api/principals", json={
-        "display_name": "Ari", "principal_kind": "person",
-    })
+    team = client.post(
+        "/api/principals",
+        json={
+            "display_name": "Electronics team",
+            "principal_kind": "team",
+        },
+    )
+    person = client.post(
+        "/api/principals",
+        json={
+            "display_name": "Ari",
+            "principal_kind": "person",
+        },
+    )
     assert team.status_code == 200 and person.status_code == 200
     principal_names = {entry["display_name"] for entry in client.get("/api/principals").json()}
     assert principal_names >= {"Electronics team", "Ari"}
-    account = client.post("/api/admin/accounts", json={
-        "login": "ari", "password": "ari-password-only", "principal_id": person.json()["id"],
-    })
+    account = client.post(
+        "/api/admin/accounts",
+        json={
+            "login": "ari",
+            "password": "ari-password-only",
+            "principal_id": person.json()["id"],
+        },
+    )
     assert account.status_code == 200, account.text
-    bad_kind = client.put(f"/api/principals/{person.json()['id']}", json={
-        "display_name": "Ari team", "principal_kind": "team",
-        "expected_version": person.json()["version"],
-    })
+    bad_kind = client.put(
+        f"/api/principals/{person.json()['id']}",
+        json={
+            "display_name": "Ari team",
+            "principal_kind": "team",
+            "expected_version": person.json()["version"],
+        },
+    )
     assert bad_kind.status_code == 422
     person_id = person.json()["id"]
     person_version = person.json()["version"]
@@ -228,10 +396,15 @@ def test_principals_are_distinct_from_accounts_and_archive_after_unlinking(clien
     blocked = client.post(archive_url)
     assert blocked.status_code == 409
     linked = account.json()
-    unlinked = client.put(f"/api/admin/accounts/{linked['id']}", json={
-        "principal_id": None, "role_ids": [], "disabled": False,
-        "expected_version": linked["version"],
-    })
+    unlinked = client.put(
+        f"/api/admin/accounts/{linked['id']}",
+        json={
+            "principal_id": None,
+            "role_ids": [],
+            "disabled": False,
+            "expected_version": linked["version"],
+        },
+    )
     assert unlinked.status_code == 200, unlinked.text
     archived = client.post(archive_url)
     assert archived.status_code == 200, archived.text
@@ -1238,12 +1411,12 @@ def test_object_creation_commits_initial_placement_and_property_overrides_togeth
         assert response.status_code == 200, response.text
         return response.json()
 
-    parent = submit(
-        {"kind": "object.create", "name": "Fixture", "allocate_alias": False}
-    )["entity_id"]
-    object_type = submit(
-        {"kind": "type.create", "name": "Tool", "abstract": False, "tag_ids": []}
-    )["entity_id"]
+    parent = submit({"kind": "object.create", "name": "Fixture", "allocate_alias": False})[
+        "entity_id"
+    ]
+    object_type = submit({"kind": "type.create", "name": "Tool", "abstract": False, "tag_ids": []})[
+        "entity_id"
+    ]
     field = submit(
         {
             "kind": "property.definition.create",
@@ -1278,26 +1451,64 @@ def test_duplicate_copies_local_properties_and_declarations_with_new_identity(cl
     session = sign_in(client)
 
     def submit(payload, status=200, command_id=None):
-        response = client.post("/api/commands", headers={"X-CSRF-Token": session["csrf_token"]},
-            json={"authority_site": session["site_id"], "authority_epoch": 1,
-                  "command_epoch": session["command_epoch"],
-                  "command_id": command_id or str(uuid4()), "payload": payload})
+        response = client.post(
+            "/api/commands",
+            headers={"X-CSRF-Token": session["csrf_token"]},
+            json={
+                "authority_site": session["site_id"],
+                "authority_epoch": 1,
+                "command_epoch": session["command_epoch"],
+                "command_id": command_id or str(uuid4()),
+                "payload": payload,
+            },
+        )
         assert response.status_code == status, response.text
         return response.json()
 
     source_type = submit({"kind": "type.create", "name": "Meter"})["entity_id"]
-    field = submit({"kind": "property.definition.create", "type_id": source_type,
-        "expected_version": 1, "label": "Manufacturer", "value_type": "text"})["entity_id"]
-    submit({"kind": "property.value.set", "target_kind": "object_type", "target_id": source_type,
-        "expected_version": 2, "property_id": field, "mode": "value", "value": "Acme"})
-    copied_type = submit({"kind": "type.create", "name": "Other meter",
-        "copy_properties_from": {"id": source_type, "expected_version": 3}})["entity_id"]
+    field = submit(
+        {
+            "kind": "property.definition.create",
+            "type_id": source_type,
+            "expected_version": 1,
+            "label": "Manufacturer",
+            "value_type": "text",
+        }
+    )["entity_id"]
+    submit(
+        {
+            "kind": "property.value.set",
+            "target_kind": "object_type",
+            "target_id": source_type,
+            "expected_version": 2,
+            "property_id": field,
+            "mode": "value",
+            "value": "Acme",
+        }
+    )
+    copied_type = submit(
+        {
+            "kind": "type.create",
+            "name": "Other meter",
+            "copy_properties_from": {"id": source_type, "expected_version": 3},
+        }
+    )["entity_id"]
     properties = client.get(f"/api/types/{copied_type}/properties").json()
     assert next(item for item in properties if item["id"] == field)["value"] == "Acme"
-    source = submit({"kind": "object.create", "name": "Original", "object_type_id": source_type,
-        "property_values": [{"property_id": field, "mode": "unset"}]})["entity_id"]
-    payload = {"kind": "object.create", "name": "Copy", "object_type_id": copied_type,
-        "copy_properties_from": {"id": source, "expected_version": 1}}
+    source = submit(
+        {
+            "kind": "object.create",
+            "name": "Original",
+            "object_type_id": source_type,
+            "property_values": [{"property_id": field, "mode": "unset"}],
+        }
+    )["entity_id"]
+    payload = {
+        "kind": "object.create",
+        "name": "Copy",
+        "object_type_id": copied_type,
+        "copy_properties_from": {"id": source, "expected_version": 1},
+    }
     command_id = str(uuid4())
     copied = submit(payload, command_id=command_id)["entity_id"]
     assert submit(payload, command_id=command_id)["entity_id"] == copied
@@ -1308,8 +1519,14 @@ def test_duplicate_copies_local_properties_and_declarations_with_new_identity(cl
     properties = client.get(f"/api/objects/{copied}/properties").json()
     assert next(item for item in properties if item["id"] == field)["local_state"] == "unset"
     # A changed source is rejected rather than copying a mix of old and new details.
-    submit({"kind": "object.edit", "object_id": source, "expected_version": 1,
-            "name": "Changed original"})
+    submit(
+        {
+            "kind": "object.edit",
+            "object_id": source,
+            "expected_version": 1,
+            "name": "Changed original",
+        }
+    )
     failure = submit(payload, status=409)
     assert failure["code"] == "VERSION_CONFLICT"
 

@@ -6,6 +6,7 @@ RUN dotnet publish src/Inventoryzing.Agent.Printer.Host/Inventoryzing.Agent.Prin
     --configuration Release --output /out --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:10.0
+RUN apt-get update && apt-get install -y --no-install-recommends libusb-1.0-0 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /out ./
 RUN useradd --system --uid 10001 --create-home inventoryzing

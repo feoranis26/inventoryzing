@@ -503,6 +503,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/properties/{property_id}/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quantity Matches
+         * @description Find effective scalar/range quantities containing an amount in a compatible unit.
+         */
+        get: operations["quantity_matches_api_properties__property_id__matches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/property-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Property Groups */
+        get: operations["list_property_groups_api_property_groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/label-placeholders": {
         parameters: {
             query?: never;
@@ -993,7 +1030,7 @@ export interface components {
              */
             command_id: string;
             /** Payload */
-            payload: components["schemas"]["CreateObject"] | components["schemas"]["EditObject"] | components["schemas"]["SetObjectType"] | components["schemas"]["MoveObject"] | components["schemas"]["AllocateAlias"] | components["schemas"]["CreateType"] | components["schemas"]["EditType"] | components["schemas"]["CreatePropertyDefinition"] | components["schemas"]["SetTypePropertyDeclaration"] | components["schemas"]["SetPropertyValue"] | components["schemas"]["EditPropertyDefinition"] | components["schemas"]["DeleteDefinition"] | components["schemas"]["ConvertPropertyUnit"] | components["schemas"]["CreateTag"] | components["schemas"]["EditTag"] | components["schemas"]["SetTagParents"] | components["schemas"]["SetEntityTags"] | components["schemas"]["SetStockPolicy"] | components["schemas"]["CreateStockHolding"] | components["schemas"]["ChangeStock"] | components["schemas"]["TransferStock"] | components["schemas"]["SplitStock"];
+            payload: components["schemas"]["CreateObject"] | components["schemas"]["EditObject"] | components["schemas"]["SetObjectType"] | components["schemas"]["MoveObject"] | components["schemas"]["AllocateAlias"] | components["schemas"]["CreateType"] | components["schemas"]["EditType"] | components["schemas"]["CreatePropertyDefinition"] | components["schemas"]["CreatePropertyGroup"] | components["schemas"]["EditPropertyGroup"] | components["schemas"]["SetTypePropertyGroup"] | components["schemas"]["SetTypePropertyDeclaration"] | components["schemas"]["SetPropertyValue"] | components["schemas"]["EditPropertyDefinition"] | components["schemas"]["DeleteDefinition"] | components["schemas"]["ConvertPropertyUnit"] | components["schemas"]["CreateTag"] | components["schemas"]["EditTag"] | components["schemas"]["SetTagParents"] | components["schemas"]["SetEntityTags"] | components["schemas"]["SetStockPolicy"] | components["schemas"]["CreateStockHolding"] | components["schemas"]["ChangeStock"] | components["schemas"]["TransferStock"] | components["schemas"]["SplitStock"];
         };
         /** CommandResult */
         CommandResult: {
@@ -1163,11 +1200,28 @@ export interface components {
              * Value Type
              * @enum {string}
              */
-            value_type: "text" | "integer" | "decimal" | "boolean" | "date" | "datetime" | "quantity";
+            value_type: "text" | "integer" | "decimal" | "boolean" | "date" | "datetime" | "quantity" | "quantity_range";
             /** Quantity Dimension */
-            quantity_dimension?: ("count" | "volume" | "length" | "mass" | "area") | null;
+            quantity_dimension?: ("count" | "volume" | "length" | "mass" | "area" | "voltage" | "current" | "resistance" | "power" | "energy" | "capacitance" | "inductance" | "frequency" | "charge") | null;
             /** Allowed Units */
             allowed_units?: string[];
+        };
+        /** CreatePropertyGroup */
+        CreatePropertyGroup: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "property.group.create";
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Property Ids */
+            property_ids?: string[];
         };
         /** CreateRole */
         CreateRole: {
@@ -1296,7 +1350,7 @@ export interface components {
              * Entity Kind
              * @enum {string}
              */
-            entity_kind: "tag" | "object_type" | "property_definition";
+            entity_kind: "tag" | "object_type" | "property_definition" | "property_group";
             /** Expected Version */
             expected_version: number;
         };
@@ -1343,6 +1397,30 @@ export interface components {
              * @default
              */
             description: string;
+        };
+        /** EditPropertyGroup */
+        EditPropertyGroup: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "property.group.edit";
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Expected Version */
+            expected_version: number;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Property Ids */
+            property_ids?: string[];
         };
         /** EditTag */
         EditTag: {
@@ -1794,7 +1872,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            type: "text" | "date" | "datetime" | "number" | "integer" | "decimal" | "boolean" | "quantity";
+            type: "text" | "date" | "datetime" | "number" | "integer" | "decimal" | "boolean" | "quantity" | "quantity_range";
             /**
              * Description
              * @default
@@ -1831,6 +1909,31 @@ export interface components {
             /** Declared On */
             declared_on?: string[];
         };
+        /** PropertyGroup */
+        PropertyGroup: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Version */
+            version: number;
+            /** Property Ids */
+            property_ids: string[];
+            /** Source Type Id */
+            source_type_id?: string | null;
+            /** Source Type Name */
+            source_type_name?: string | null;
+            /**
+             * Assigned Directly
+             * @default false
+             */
+            assigned_directly: boolean;
+        };
         /** PropertyValue */
         PropertyValue: {
             /** Id */
@@ -1844,7 +1947,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            type: "text" | "date" | "datetime" | "number" | "integer" | "decimal" | "boolean" | "quantity";
+            type: "text" | "date" | "datetime" | "number" | "integer" | "decimal" | "boolean" | "quantity" | "quantity_range";
             /**
              * Description
              * @default
@@ -1920,6 +2023,16 @@ export interface components {
              * @default false
              */
             declared_directly: boolean;
+        };
+        /** QuantityMatch */
+        QuantityMatch: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ResetAccountPassword */
         ResetAccountPassword: {
@@ -2225,6 +2338,28 @@ export interface components {
             /** Applicable */
             applicable: boolean;
         };
+        /** SetTypePropertyGroup */
+        SetTypePropertyGroup: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "type.property.group.set";
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Expected Version */
+            expected_version: number;
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Applicable */
+            applicable: boolean;
+        };
         /** SiteSettingsView */
         SiteSettingsView: {
             /**
@@ -2432,7 +2567,7 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "count" | "volume" | "length" | "mass" | "area";
+            id: "count" | "volume" | "length" | "mass" | "area" | "voltage" | "current" | "resistance" | "power" | "energy" | "capacitance" | "inductance" | "frequency" | "charge";
             /** Label */
             label: string;
             /** Canonical Unit */
@@ -3514,6 +3649,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnitDimension"][];
+                };
+            };
+        };
+    };
+    quantity_matches_api_properties__property_id__matches_get: {
+        parameters: {
+            query: {
+                amount: string;
+                unit: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                property_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuantityMatch"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_property_groups_api_property_groups_get: {
+        parameters: {
+            query?: {
+                type_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertyGroup"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

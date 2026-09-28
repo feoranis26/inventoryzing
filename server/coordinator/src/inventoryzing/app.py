@@ -60,7 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if (
             request.method not in {"GET", "HEAD", "OPTIONS"}
             and not request.url.path.startswith("/api/agent/")
-            and request.headers.get("origin") != settings.public_origin
+            and request.headers.get("origin")
+            not in [settings.public_origin, *settings.additional_origins]
         ):
             return JSONResponse({"detail": "Request origin is not permitted."}, status_code=403)
         response = await call_next(request)

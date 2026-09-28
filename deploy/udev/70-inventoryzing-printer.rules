@@ -1,0 +1,2 @@
+# Grant only the QL-820NWB to the service's group; do not make all USB devices writable.
+SUBSYSTEM=="usb", ATTR{idVendor}=="04f9", ATTR{idProduct}=="209d", GROUP="inventoryzing", MODE="0660"

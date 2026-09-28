@@ -1,4 +1,5 @@
 import type { components } from './generated/api'
+import { randomUuid } from './uuid'
 
 type Schemas = components['schemas']
 export type Session = Schemas['SessionView']
@@ -58,7 +59,7 @@ export function makeCommand(session: Session, payload: Payload, authorityEpoch =
     authority_site: session.site_id,
     authority_epoch: authorityEpoch,
     command_epoch: session.command_epoch,
-    command_id: crypto.randomUUID(),
+    command_id: randomUuid(),
     payload: structuredClone(payload),
   }
 }

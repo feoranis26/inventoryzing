@@ -80,7 +80,13 @@ public sealed class BrotherRasterSession(IBrotherRasterTransport transport) : IA
         await ConnectAsync(cancellationToken).ConfigureAwait(false);
         await transport.WriteAsync(BrotherRasterStatusParser.StatusRequest.ToArray(), cancellationToken)
             .ConfigureAwait(false);
-        return await ReadStatusAsync(cancellationToken).ConfigureAwait(false);
+        // A preceding session may leave phase/notification frames buffered. Only a
+        // response to this status request is acceptable preflight evidence.
+        while (true)
+        {
+            var status = await ReadStatusAsync(cancellationToken).ConfigureAwait(false);
+            if (status.StatusType == 0x00) return status;
+        }
     }
 
     public async ValueTask SendPageAsync(ReadOnlyMemory<byte> page, CancellationToken cancellationToken)
@@ -91,8 +97,8 @@ public sealed class BrotherRasterSession(IBrotherRasterTransport transport) : IA
         }
 
         await ConnectAsync(cancellationToken).ConfigureAwait(false);
-        await transport.WriteAsync(page, cancellationToken).ConfigureAwait(false);
         pageWritten = true;
+        await transport.WriteAsync(page, cancellationToken).ConfigureAwait(false);
     }
 
     public ValueTask<BrotherRasterStatus> ReadAutomaticStatusAsync(CancellationToken cancellationToken)

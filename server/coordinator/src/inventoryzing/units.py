@@ -5,7 +5,22 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-Dimension = Literal["count", "volume", "length", "mass", "area"]
+Dimension = Literal[
+    "count",
+    "volume",
+    "length",
+    "mass",
+    "area",
+    "voltage",
+    "current",
+    "resistance",
+    "power",
+    "energy",
+    "capacitance",
+    "inductance",
+    "frequency",
+    "charge",
+]
 
 
 class Unit(BaseModel):
@@ -105,6 +120,85 @@ CATALOG = [
         ],
     ),
 ]
+CATALOG.extend(
+    [
+        dimension(
+            "voltage",
+            "Voltage",
+            "V",
+            [("mV", "mV", "0.001"), ("V", "V", "1"), ("kV", "kV", "1000")],
+        ),
+        dimension(
+            "current",
+            "Current",
+            "A",
+            [("uA", "µA", "0.000001"), ("mA", "mA", "0.001"), ("A", "A", "1")],
+        ),
+        dimension(
+            "resistance",
+            "Resistance",
+            "ohm",
+            [
+                ("mohm", "mΩ", "0.001"),
+                ("ohm", "Ω", "1"),
+                ("kohm", "kΩ", "1000"),
+                ("Mohm", "MΩ", "1000000"),
+            ],
+        ),
+        dimension(
+            "power",
+            "Power",
+            "W",
+            [("mW", "mW", "0.001"), ("W", "W", "1"), ("kW", "kW", "1000"), ("MW", "MW", "1000000")],
+        ),
+        dimension(
+            "energy",
+            "Energy",
+            "J",
+            [
+                ("J", "J", "1"),
+                ("kJ", "kJ", "1000"),
+                ("Wh", "Wh", "3600"),
+                ("kWh", "kWh", "3600000"),
+            ],
+        ),
+        dimension(
+            "capacitance",
+            "Capacitance",
+            "F",
+            [
+                ("pF", "pF", "0.000000000001"),
+                ("nF", "nF", "0.000000001"),
+                ("uF", "µF", "0.000001"),
+                ("mF", "mF", "0.001"),
+                ("F", "F", "1"),
+            ],
+        ),
+        dimension(
+            "inductance",
+            "Inductance",
+            "H",
+            [("uH", "µH", "0.000001"), ("mH", "mH", "0.001"), ("H", "H", "1")],
+        ),
+        dimension(
+            "frequency",
+            "Frequency",
+            "Hz",
+            [
+                ("Hz", "Hz", "1"),
+                ("kHz", "kHz", "1000"),
+                ("MHz", "MHz", "1000000"),
+                ("GHz", "GHz", "1000000000"),
+            ],
+        ),
+        dimension(
+            "charge",
+            "Electric charge / battery capacity",
+            "C",
+            [("C", "C", "1"), ("mAh", "mAh", "3.6"), ("Ah", "Ah", "3600")],
+        ),
+    ]
+)
 DIMENSIONS = {item.id: item for item in CATALOG}
 UNIT_LABELS = {unit.id: unit.label for item in CATALOG for unit in item.units}
 

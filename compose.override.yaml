@@ -1,0 +1,2 @@
+# The base configuration listens on all interfaces, including localhost.
+services: {}
